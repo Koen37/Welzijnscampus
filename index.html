@@ -55,6 +55,7 @@
   <script>
     const scriptURL = 'https://script.google.com/macros/s/AKfycbz-VWWh_z5nOl1fsMA5Wen3D1cTz5u4Qy6FAojue3DR9U43dHXfBYA7FQzTjo5WIQZq/exec';
     let allEvents = [];
+    let calendar; // Globale variabele
 
     document.getElementById('booking-form').addEventListener('submit', function(e) {
       e.preventDefault();
@@ -98,8 +99,8 @@
         .then(data => {
           allEvents = data.map(entry => ({
             title: entry.zaal + ' - ' + entry.naam,
-            start: entry.datum + 'T' + entry.start,
-            end: entry.datum + 'T' + entry.stop,
+            start: entry.datum + 'T' + entry.start + ':00',
+            end: entry.datum + 'T' + entry.stop + ':00',
             zaal: entry.zaal,
             naam: entry.naam,
             datum: entry.datum,
@@ -113,14 +114,20 @@
 
     function renderCalendar(filter) {
       const calendarEl = document.getElementById('calendar');
-      calendarEl.innerHTML = '';
 
       const filteredEvents = filter === "ALL"
         ? allEvents
         : allEvents.filter(event => event.zaal === filter);
 
-      new FullCalendar.Calendar(calendarEl, {
+      if (calendar) {
+        calendar.removeAllEvents();
+        filteredEvents.forEach(event => calendar.addEvent(event));
+        return;
+      }
+
+      calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'timeGridWeek',
+        timeZone: 'local',
         events: filteredEvents,
         eventClick: function(info) {
           const [zaal, naam] = info.event.title.split(' - ');
@@ -131,7 +138,9 @@
             cancelBooking(zaal, datum, start, naam, mail);
           }
         }
-      }).render();
+      });
+
+      calendar.render();
     }
 
     document.getElementById('zaal-filter').addEventListener('change', function () {
