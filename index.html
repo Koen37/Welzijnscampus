@@ -109,7 +109,14 @@ function cancelBooking(zaal, datum, start, naam, mail) {
       calendarEl.innerHTML = '';
 
 
-    
+
+      const filteredEvents = filter === "ALL"
+        ? allEvents
+        : allEvents.filter(event => event.zaal === filter);
+
+      new FullCalendar.Calendar(calendarEl, {
+        initialView: 'timeGridWeek',
+        events: filteredEvents,   
       eventClick: function(info) {
   if (confirm(`Boeking van ${info.event.title} annuleren?`)) {
     const [zaal, naam] = info.event.title.split(' - ');
@@ -119,14 +126,6 @@ function cancelBooking(zaal, datum, start, naam, mail) {
     cancelBooking(zaal, datum, start, naam, mail);
   }
 }
-
-      const filteredEvents = filter === "ALL"
-        ? allEvents
-        : allEvents.filter(event => event.zaal === filter);
-
-      new FullCalendar.Calendar(calendarEl, {
-        initialView: 'timeGridWeek',
-        events: filteredEvents
       }).render();
     }
 
