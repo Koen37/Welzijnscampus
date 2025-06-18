@@ -1,0 +1,85 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <title>Reserveringssysteem Lokalen</title>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #calendar { max-width: 900px; margin: 0 auto; }
+    form { margin-bottom: 30px; max-width: 600px; }
+    input, select, button { display: block; margin: 10px 0; padding: 8px; width: 100%; }
+  </style>
+</head>
+<body>
+  <h1>Reserveringssysteem voor Lokalen</h1>
+
+  <form id="booking-form">
+    <label for="room">Kies een lokaal:</label>
+    <select name="room" required>
+      <option value="Lokaal 1">Lokaal 1</option>
+      <option value="Lokaal 2">Lokaal 2</option>
+      <option value="Lokaal 3">Lokaal 3</option>
+      <!-- Voeg extra lokalen toe indien nodig -->
+    </select>
+
+    <label for="date">Datum:</label>
+    <input type="date" name="date" required>
+
+    <label for="time">Tijd:</label>
+    <input type="time" name="time" required>
+
+    <label for="name">Naam:</label>
+    <input type="text" name="name" required>
+
+    <label for="email">E-mailadres:</label>
+    <input type="email" name="email" required>
+
+    <button type="submit">Reserveer</button>
+  </form>
+
+  <div id="calendar"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <script>
+    const scriptURL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec'; // Vervang met jouw script ID
+
+    document.getElementById('booking-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+
+      fetch(scriptURL, {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.text())
+      .then(result => {
+        alert(result);
+        loadCalendar();
+      });
+    });
+
+    function loadCalendar() {
+      fetch(scriptURL)
+        .then(res => res.json())
+        .then(data => {
+          const events = data.map(entry => ({
+            title: entry.room + ' - ' + entry.name,
+            start: entry.date + 'T' + entry.time,
+          }));
+
+          const calendarEl = document.getElementById('calendar');
+          calendarEl.innerHTML = ''; // Reset
+
+          new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridWeek',
+            events: events
+          }).render();
+        });
+    }
+
+    loadCalendar();
+  </script>
+</body>
+</html>
