@@ -1,37 +1,111 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="nl">
 <head>
   <meta charset="UTF-8">
-  <title>Test Kalender</title>
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
+  <title>Reserveringssysteem Lokalen</title>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
     #calendar { max-width: 900px; margin: 0 auto; }
+    form { margin-bottom: 30px; max-width: 600px; }
+    input, select, button { display: block; margin: 10px 0; padding: 8px; width: 100%; }
   </style>
 </head>
 <body>
-  <h1>Test Kalender</h1>
+  <h1>Reserveringssysteem voor Lokalen</h1>
+
+  <form id="booking-form">
+    <label for="zaal">Kies een zaal:</label>
+    <select name="zaal" required>
+      <option value="Zaal 1">Zaal 1</option>
+      <option value="Zaal 2">Zaal 2</option>
+      <option value="Zaal 3">Zaal 3</option>
+    </select>
+
+    <label for="datum">Datum:</label>
+    <input type="date" name="datum" required>
+
+    <label for="start">Starttijd:</label>
+    <input type="time" name="start" required>
+
+    <label for="stop">Eindtijd:</label>
+    <input type="time" name="stop" required>
+
+    <label for="naam">Naam:</label>
+    <input type="text" name="naam" required>
+
+    <label for="mail">E-mailadres:</label>
+    <input type="email" name="mail" required>
+
+    <button type="submit">Reserveer</button>
+  </form>
+
+  <label for="zaal-filter">Toon kalender voor:</label>
+  <select id="zaal-filter">
+    <option value="ALL">Alle zalen</option>
+    <option value="Zaal 1">Zaal 1</option>
+    <option value="Zaal 2">Zaal 2</option>
+    <option value="Zaal 3">Zaal 3</option>
+  </select>
+
   <div id="calendar"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      const calendarEl = document.getElementById('calendar');
-      const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'timeGridWeek',
-        timeZone: 'local',
-        events: [
-          {
-            title: 'Testevent',
-            start: '2025-06-20T10:00:00',
-            end: '2025-06-20T12:00:00',
-            allDay: false
-          }
-        ]
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbz-VWWh_z5nOl1fsMA5Wen3D1cTz5u4Qy6FAojue3DR9U43dHXfBYA7FQzTjo5WIQZq/exec';
+    let allEvents = [];
+
+    document.getElementById('booking-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+
+      fetch(scriptURL, {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.text())
+      .then(result => {
+        alert(result);
+        loadCalendar();
       });
-      console.log("Rendering test calendar...");
-      calendar.render();
     });
+
+    function loadCalendar(filter = "ALL") {
+      fetch(scriptURL)
+        .then(res => res.json())
+        .then(data => {
+          allEvents = data.map(entry => ({
+            title: entry.zaal + ' - ' + entry.naam,
+            start: entry.datum + 'T' + entry.start,
+            end: entry.datum + 'T' + entry.stop,
+            zaal: entry.zaal
+          }));
+
+          renderCalendar(filter);
+        });
+    }
+
+    function renderCalendar(filter) {
+      const calendarEl = document.getElementById('calendar');
+      calendarEl.innerHTML = '';
+
+      const filteredEvents = filter === "ALL"
+        ? allEvents
+        : allEvents.filter(event => event.zaal === filter);
+
+      new FullCalendar.Calendar(calendarEl, {
+        initialView: 'timeGridWeek',
+        events: filteredEvents
+      }).render();
+    }
+
+    document.getElementById('zaal-filter').addEventListener('change', function () {
+      const selectedZaal = this.value;
+      renderCalendar(selectedZaal);
+    });
+
+    loadCalendar();
   </script>
 </body>
 </html>
