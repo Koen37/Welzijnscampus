@@ -71,6 +71,24 @@
       });
     });
 
+function cancelBooking(zaal, datum, start, naam, mail) {
+  const formData = new FormData();
+  formData.append('action', 'delete');
+  formData.append('zaal', zaal);
+  formData.append('datum', datum);
+  formData.append('start', start);
+  formData.append('naam', naam);
+  formData.append('mail', mail);
+
+  fetch(scriptURL, {
+    method: 'POST',
+    body: formData
+  }).then(res => res.text()).then(result => {
+    alert(result);
+    loadCalendar(); // refresh
+  });
+}
+    
     function loadCalendar(filter = "ALL") {
       fetch(scriptURL)
         .then(res => res.json())
@@ -89,6 +107,18 @@
     function renderCalendar(filter) {
       const calendarEl = document.getElementById('calendar');
       calendarEl.innerHTML = '';
+
+
+    
+      eventClick: function(info) {
+  if (confirm(`Boeking van ${info.event.title} annuleren?`)) {
+    const [zaal, naam] = info.event.title.split(' - ');
+    const datum = info.event.startStr.split('T')[0];
+    const start = info.event.startStr.split('T')[1].substring(0,5);
+    const mail = prompt('Bevestig je e-mailadres om te annuleren:');
+    cancelBooking(zaal, datum, start, naam, mail);
+  }
+}
 
       const filteredEvents = filter === "ALL"
         ? allEvents
