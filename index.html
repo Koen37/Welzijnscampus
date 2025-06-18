@@ -132,7 +132,7 @@
 
       if (calendar) {
         calendar.removeAllEvents();
-        calendar.setOption('events', filteredEvents);
+        calendar.addEventSource(filteredEvents);
         return;
       }
 
