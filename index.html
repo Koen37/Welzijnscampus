@@ -131,6 +131,7 @@
         : allEvents.filter(event => event.zaal === filter);
 
       if (calendar) {
+        console.log('Filtered events die naar FullCalendar gaan:', filteredEvents);
         calendar.removeAllEvents();
         calendar.addEventSource(filteredEvents);
         return;
