@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Reserveringssysteem Lokalen</title>
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
     #calendar { max-width: 900px; margin: 0 auto; }
@@ -51,7 +51,7 @@
 
   <div id="calendar"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
   <script>
     const scriptURL = 'https://script.google.com/macros/s/AKfycbz-VWWh_z5nOl1fsMA5Wen3D1cTz5u4Qy6FAojue3DR9U43dHXfBYA7FQzTjo5WIQZq/exec';
     let allEvents = [];
@@ -97,27 +97,17 @@
       fetch(scriptURL)
         .then(res => res.json())
         .then(data => {
-          allEvents = data.boekingen
-            ? data.boekingen.map(entry => ({
-                title: entry.zaal + ' - ' + entry.naam,
-                start: new Date(`${entry.datum}T${entry.start}`),
-                end: new Date(`${entry.datum}T${entry.stop}`),
-                zaal: entry.zaal,
-                naam: entry.naam,
-                datum: entry.datum,
-                mail: entry.mail,
-                startTime: entry.start
-              }))
-            : data.map(entry => ({
-                title: entry.zaal + ' - ' + entry.naam,
-                start: new Date(`${entry.datum}T${entry.start}`),
-                end: new Date(`${entry.datum}T${entry.stop}`),
-                zaal: entry.zaal,
-                naam: entry.naam,
-                datum: entry.datum,
-                mail: entry.mail,
-                startTime: entry.start
-              }));
+          allEvents = (data.boekingen || data).map(entry => ({
+            title: entry.zaal + ' - ' + entry.naam,
+            start: new Date(`${entry.datum}T${entry.start}`),
+            end: new Date(`${entry.datum}T${entry.stop}`),
+            zaal: entry.zaal,
+            naam: entry.naam,
+            datum: entry.datum,
+            mail: entry.mail,
+            startTime: entry.start,
+            allDay: false
+          }));
 
           renderCalendar(filter);
         });
@@ -125,15 +115,15 @@
 
     function renderCalendar(filter) {
       const calendarEl = document.getElementById('calendar');
-
       const filteredEvents = filter === "ALL"
         ? allEvents
         : allEvents.filter(event => event.zaal === filter);
 
       if (calendar) {
-        console.log('Filtered events die naar FullCalendar gaan:', filteredEvents);
         calendar.removeAllEvents();
-        calendar.addEventSource(filteredEvents);
+        filteredEvents.forEach(event => {
+          calendar.addEvent({ ...event, allDay: false });
+        });
         return;
       }
 
