@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Reserveringssysteem Lokalen</title>
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
     #calendar { max-width: 900px; margin: 0 auto; }
@@ -51,7 +51,7 @@
 
   <div id="calendar"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
   <script>
     const scriptURL = 'https://script.google.com/macros/s/AKfycbz-VWWh_z5nOl1fsMA5Wen3D1cTz5u4Qy6FAojue3DR9U43dHXfBYA7FQzTjo5WIQZq/exec';
     let allEvents = [];
@@ -71,24 +71,24 @@
       });
     });
 
-function cancelBooking(zaal, datum, start, naam, mail) {
-  const formData = new FormData();
-  formData.append('action', 'delete');
-  formData.append('zaal', zaal);
-  formData.append('datum', datum);
-  formData.append('start', start);
-  formData.append('naam', naam);
-  formData.append('mail', mail);
+    function cancelBooking(zaal, datum, start, naam, mail) {
+      const formData = new FormData();
+      formData.append('action', 'delete');
+      formData.append('zaal', zaal);
+      formData.append('datum', datum);
+      formData.append('start', start);
+      formData.append('naam', naam);
+      formData.append('mail', mail);
 
-  fetch(scriptURL, {
-    method: 'POST',
-    body: formData
-  }).then(res => res.text()).then(result => {
-    alert(result);
-    loadCalendar(); // refresh
-  });
-}
-    
+      fetch(scriptURL, {
+        method: 'POST',
+        body: formData
+      }).then(res => res.text()).then(result => {
+        alert(result);
+        loadCalendar(); // refresh
+      });
+    }
+
     function loadCalendar(filter = "ALL") {
       fetch(scriptURL)
         .then(res => res.json())
@@ -97,7 +97,11 @@ function cancelBooking(zaal, datum, start, naam, mail) {
             title: entry.zaal + ' - ' + entry.naam,
             start: entry.datum + 'T' + entry.start,
             end: entry.datum + 'T' + entry.stop,
-            zaal: entry.zaal
+            zaal: entry.zaal,
+            naam: entry.naam,
+            mail: entry.mail,
+            datum: entry.datum,
+            startTime: entry.start
           }));
 
           renderCalendar(filter);
@@ -108,24 +112,23 @@ function cancelBooking(zaal, datum, start, naam, mail) {
       const calendarEl = document.getElementById('calendar');
       calendarEl.innerHTML = '';
 
-
-
       const filteredEvents = filter === "ALL"
         ? allEvents
         : allEvents.filter(event => event.zaal === filter);
 
       new FullCalendar.Calendar(calendarEl, {
         initialView: 'timeGridWeek',
-        events: filteredEvents,   
-      eventClick: function(info) {
-  if (confirm(`Boeking van ${info.event.title} annuleren?`)) {
-    const [zaal, naam] = info.event.title.split(' - ');
-    const datum = info.event.startStr.split('T')[0];
-    const start = info.event.startStr.split('T')[1].substring(0,5);
-    const mail = prompt('Bevestig je e-mailadres om te annuleren:');
-    cancelBooking(zaal, datum, start, naam, mail);
-  }
-}
+        events: filteredEvents,
+        eventClick: function(info) {
+          if (confirm(`Boeking van ${info.event.title} annuleren?`)) {
+            const zaal = info.event.extendedProps.zaal;
+            const naam = info.event.extendedProps.naam;
+            const datum = info.event.extendedProps.datum;
+            const start = info.event.extendedProps.startTime;
+            const mail = prompt('Bevestig je e-mailadres om te annuleren:');
+            if (mail) cancelBooking(zaal, datum, start, naam, mail);
+          }
+        }
       }).render();
     }
 
