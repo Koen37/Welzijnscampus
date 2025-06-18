@@ -21,7 +21,6 @@
       <option value="Zaal 1">Zaal 1</option>
       <option value="Zaal 2">Zaal 2</option>
       <option value="Zaal 3">Zaal 3</option>
-      <!-- Voeg extra zalen toe indien nodig -->
     </select>
 
     <label for="datum">Datum:</label>
@@ -42,11 +41,20 @@
     <button type="submit">Reserveer</button>
   </form>
 
+  <label for="zaal-filter">Toon kalender voor:</label>
+  <select id="zaal-filter">
+    <option value="ALL">Alle zalen</option>
+    <option value="Zaal 1">Zaal 1</option>
+    <option value="Zaal 2">Zaal 2</option>
+    <option value="Zaal 3">Zaal 3</option>
+  </select>
+
   <div id="calendar"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <script>
     const scriptURL = 'https://script.google.com/macros/s/AKfycbz-VWWh_z5nOl1fsMA5Wen3D1cTz5u4Qy6FAojue3DR9U43dHXfBYA7FQzTjo5WIQZq/exec';
+    let allEvents = [];
 
     document.getElementById('booking-form').addEventListener('submit', function(e) {
       e.preventDefault();
@@ -63,25 +71,39 @@
       });
     });
 
-    function loadCalendar() {
+    function loadCalendar(filter = "ALL") {
       fetch(scriptURL)
         .then(res => res.json())
         .then(data => {
-          const events = data.map(entry => ({
+          allEvents = data.map(entry => ({
             title: entry.zaal + ' - ' + entry.naam,
             start: entry.datum + 'T' + entry.start,
-            end: entry.datum + 'T' + entry.stop
+            end: entry.datum + 'T' + entry.stop,
+            zaal: entry.zaal
           }));
 
-          const calendarEl = document.getElementById('calendar');
-          calendarEl.innerHTML = ''; // Reset
-
-          new FullCalendar.Calendar(calendarEl, {
-            initialView: 'timeGridWeek',
-            events: events
-          }).render();
+          renderCalendar(filter);
         });
     }
+
+    function renderCalendar(filter) {
+      const calendarEl = document.getElementById('calendar');
+      calendarEl.innerHTML = '';
+
+      const filteredEvents = filter === "ALL"
+        ? allEvents
+        : allEvents.filter(event => event.zaal === filter);
+
+      new FullCalendar.Calendar(calendarEl, {
+        initialView: 'timeGridWeek',
+        events: filteredEvents
+      }).render();
+    }
+
+    document.getElementById('zaal-filter').addEventListener('change', function () {
+      const selectedZaal = this.value;
+      renderCalendar(selectedZaal);
+    });
 
     loadCalendar();
   </script>
