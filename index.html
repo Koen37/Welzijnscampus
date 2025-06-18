@@ -59,6 +59,7 @@
     document.getElementById('booking-form').addEventListener('submit', function(e) {
       e.preventDefault();
       const formData = new FormData(this);
+      formData.append('action', 'add');
 
       fetch(scriptURL, {
         method: 'POST',
@@ -71,6 +72,26 @@
       });
     });
 
+    function cancelBooking(zaal, datum, start, naam, mail) {
+      const formData = new FormData();
+      formData.append('action', 'delete');
+      formData.append('zaal', zaal);
+      formData.append('datum', datum);
+      formData.append('start', start);
+      formData.append('naam', naam);
+      formData.append('mail', mail);
+
+      fetch(scriptURL, {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.text())
+      .then(result => {
+        alert(result);
+        loadCalendar();
+      });
+    }
+
     function loadCalendar(filter = "ALL") {
       fetch(scriptURL)
         .then(res => res.json())
@@ -79,7 +100,11 @@
             title: entry.zaal + ' - ' + entry.naam,
             start: entry.datum + 'T' + entry.start,
             end: entry.datum + 'T' + entry.stop,
-            zaal: entry.zaal
+            zaal: entry.zaal,
+            naam: entry.naam,
+            datum: entry.datum,
+            mail: entry.mail,
+            startTime: entry.start
           }));
 
           renderCalendar(filter);
@@ -96,7 +121,16 @@
 
       new FullCalendar.Calendar(calendarEl, {
         initialView: 'timeGridWeek',
-        events: filteredEvents
+        events: filteredEvents,
+        eventClick: function(info) {
+          const [zaal, naam] = info.event.title.split(' - ');
+          const datum = info.event.startStr.split('T')[0];
+          const start = info.event.startStr.split('T')[1].substring(0, 5);
+          const mail = prompt(`Bevestig je e-mailadres om de boeking van ${naam} in ${zaal} te annuleren:`);
+          if (mail) {
+            cancelBooking(zaal, datum, start, naam, mail);
+          }
+        }
       }).render();
     }
 
