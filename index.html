@@ -16,25 +16,28 @@
   <h1>Reserveringssysteem voor Lokalen</h1>
 
   <form id="booking-form">
-    <label for="room">Kies een lokaal:</label>
-    <select name="room" required>
-      <option value="Lokaal 1">Lokaal 1</option>
-      <option value="Lokaal 2">Lokaal 2</option>
-      <option value="Lokaal 3">Lokaal 3</option>
-      <!-- Voeg extra lokalen toe indien nodig -->
+    <label for="zaal">Kies een zaal:</label>
+    <select name="zaal" required>
+      <option value="Zaal 1">Zaal 1</option>
+      <option value="Zaal 2">Zaal 2</option>
+      <option value="Zaal 3">Zaal 3</option>
+      <!-- Voeg extra zalen toe indien nodig -->
     </select>
 
-    <label for="date">Datum:</label>
-    <input type="date" name="date" required>
+    <label for="datum">Datum:</label>
+    <input type="date" name="datum" required>
 
-    <label for="time">Tijd:</label>
-    <input type="time" name="time" required>
+    <label for="start">Starttijd:</label>
+    <input type="time" name="start" required>
 
-    <label for="name">Naam:</label>
-    <input type="text" name="name" required>
+    <label for="stop">Eindtijd:</label>
+    <input type="time" name="stop" required>
 
-    <label for="email">E-mailadres:</label>
-    <input type="email" name="email" required>
+    <label for="naam">Naam:</label>
+    <input type="text" name="naam" required>
+
+    <label for="mail">E-mailadres:</label>
+    <input type="email" name="mail" required>
 
     <button type="submit">Reserveer</button>
   </form>
@@ -43,7 +46,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <script>
-    const scriptURL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec'; // Vervang met jouw script ID
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbz-VWWh_z5nOl1fsMA5Wen3D1cTz5u4Qy6FAojue3DR9U43dHXfBYA7FQzTjo5WIQZq/exec';
 
     document.getElementById('booking-form').addEventListener('submit', function(e) {
       e.preventDefault();
@@ -65,8 +68,9 @@
         .then(res => res.json())
         .then(data => {
           const events = data.map(entry => ({
-            title: entry.room + ' - ' + entry.name,
-            start: entry.date + 'T' + entry.time,
+            title: entry.zaal + ' - ' + entry.naam,
+            start: entry.datum + 'T' + entry.start,
+            end: entry.datum + 'T' + entry.stop
           }));
 
           const calendarEl = document.getElementById('calendar');
