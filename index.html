@@ -100,8 +100,8 @@
           allEvents = data.boekingen
             ? data.boekingen.map(entry => ({
                 title: entry.zaal + ' - ' + entry.naam,
-                start: entry.datum + 'T' + entry.start + ':00',
-                end: entry.datum + 'T' + entry.stop + ':00',
+                start: new Date(`${entry.datum}T${entry.start}`),
+                end: new Date(`${entry.datum}T${entry.stop}`),
                 zaal: entry.zaal,
                 naam: entry.naam,
                 datum: entry.datum,
@@ -110,8 +110,8 @@
               }))
             : data.map(entry => ({
                 title: entry.zaal + ' - ' + entry.naam,
-                start: entry.datum + 'T' + entry.start + ':00',
-                end: entry.datum + 'T' + entry.stop + ':00',
+                start: new Date(`${entry.datum}T${entry.start}`),
+                end: new Date(`${entry.datum}T${entry.stop}`),
                 zaal: entry.zaal,
                 naam: entry.naam,
                 datum: entry.datum,
