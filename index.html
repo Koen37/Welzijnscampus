@@ -55,7 +55,7 @@
   <script>
     const scriptURL = 'https://script.google.com/macros/s/AKfycbz-VWWh_z5nOl1fsMA5Wen3D1cTz5u4Qy6FAojue3DR9U43dHXfBYA7FQzTjo5WIQZq/exec';
     let allEvents = [];
-    let calendar; // Globale variabele
+    let calendar;
 
     document.getElementById('booking-form').addEventListener('submit', function(e) {
       e.preventDefault();
@@ -97,16 +97,27 @@
       fetch(scriptURL)
         .then(res => res.json())
         .then(data => {
-          allEvents = data.map(entry => ({
-            title: entry.zaal + ' - ' + entry.naam,
-            start: entry.datum + 'T' + entry.start + ':00',
-            end: entry.datum + 'T' + entry.stop + ':00',
-            zaal: entry.zaal,
-            naam: entry.naam,
-            datum: entry.datum,
-            mail: entry.mail,
-            startTime: entry.start
-          }));
+          allEvents = data.boekingen
+            ? data.boekingen.map(entry => ({
+                title: entry.zaal + ' - ' + entry.naam,
+                start: entry.datum + 'T' + entry.start + ':00',
+                end: entry.datum + 'T' + entry.stop + ':00',
+                zaal: entry.zaal,
+                naam: entry.naam,
+                datum: entry.datum,
+                mail: entry.mail,
+                startTime: entry.start
+              }))
+            : data.map(entry => ({
+                title: entry.zaal + ' - ' + entry.naam,
+                start: entry.datum + 'T' + entry.start + ':00',
+                end: entry.datum + 'T' + entry.stop + ':00',
+                zaal: entry.zaal,
+                naam: entry.naam,
+                datum: entry.datum,
+                mail: entry.mail,
+                startTime: entry.start
+              }));
 
           renderCalendar(filter);
         });
@@ -121,7 +132,7 @@
 
       if (calendar) {
         calendar.removeAllEvents();
-        filteredEvents.forEach(event => calendar.addEvent(event));
+        calendar.setOption('events', filteredEvents);
         return;
       }
 
