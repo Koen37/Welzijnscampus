@@ -51,14 +51,16 @@
 
   <div id="calendar"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.global.min.js"></script>
   <script>
     const scriptURL = 'https://script.google.com/macros/s/AKfycbz-VWWh_z5nOl1fsMA5Wen3D1cTz5u4Qy6FAojue3DR9U43dHXfBYA7FQzTjo5WIQZq/exec';
     let allEvents = [];
+    let calendar;
 
     document.getElementById('booking-form').addEventListener('submit', function(e) {
       e.preventDefault();
       const formData = new FormData(this);
+      formData.append('action', 'add');
 
       fetch(scriptURL, {
         method: 'POST',
@@ -80,7 +82,9 @@
       fetch(scriptURL, {
         method: 'POST',
         body: formData
-      }).then(res => res.text()).then(result => {
+      })
+      .then(res => res.text())
+      .then(result => {
         alert(result);
         loadCalendar();
       });
@@ -91,7 +95,7 @@
         .then(res => res.json())
         .then(data => {
           allEvents = data.map(entry => ({
-            id: entry.boekingsNr,
+            id: entry.boekingsnr,
             title: entry.zaal + ' - ' + entry.naam,
             start: entry.datum + 'T' + entry.start,
             end: entry.datum + 'T' + entry.stop,
@@ -104,14 +108,20 @@
 
     function renderCalendar(filter) {
       const calendarEl = document.getElementById('calendar');
-      calendarEl.innerHTML = '';
 
       const filteredEvents = filter === "ALL"
         ? allEvents
         : allEvents.filter(event => event.zaal === filter);
 
-      new FullCalendar.Calendar(calendarEl, {
+      if (calendar) {
+        calendar.removeAllEvents();
+        calendar.addEventSource(filteredEvents);
+        return;
+      }
+
+      calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'timeGridWeek',
+        timeZone: 'local',
         events: filteredEvents,
         eventClick: function(info) {
           if (confirm(`Boeking van ${info.event.title} annuleren?`)) {
@@ -120,7 +130,9 @@
             if (mail) cancelBooking(id, mail);
           }
         }
-      }).render();
+      });
+
+      calendar.render();
     }
 
     document.getElementById('zaal-filter').addEventListener('change', function () {
