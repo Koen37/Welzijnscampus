@@ -34,6 +34,13 @@
     <label for="mail">E-mailadres:</label>
     <input type="email" name="mail" required>
 
+    <label>
+      <input type="checkbox" id="herhaal" name="herhaal"> Herhaal wekelijks
+    </label>
+
+    <label for="einddatum">Herhalen tot en met:</label>
+    <input type="date" name="einddatum" id="einddatum">
+
     <button type="submit">Reserveer</button>
   </form>
 
@@ -50,16 +57,48 @@
 
     document.getElementById('booking-form').addEventListener('submit', function(e) {
       e.preventDefault();
-      const formData = new FormData(this);
-      formData.append('action', 'add');
 
-      fetch(scriptURL, {
-        method: 'POST',
-        body: formData
-      })
-      .then(response => response.text())
-      .then(result => {
-        alert(result);
+      const formData = new FormData(this);
+      const herhaal = document.getElementById('herhaal').checked;
+      const einddatum = document.getElementById('einddatum').value;
+
+      const zaal = formData.get('zaal');
+      const naam = formData.get('naam');
+      const mail = formData.get('mail');
+      const starttijd = formData.get('start');
+      const stoptijd = formData.get('stop');
+      const begindatum = formData.get('datum');
+
+      const boekingen = [];
+
+      if (herhaal && einddatum) {
+        let current = new Date(begindatum);
+        const end = new Date(einddatum);
+
+        while (current <= end) {
+          const datumStr = current.toISOString().split('T')[0];
+          boekingen.push({ zaal, naam, mail, start: starttijd, stop: stoptijd, datum: datumStr, kleur: 'lightblue' });
+          current.setDate(current.getDate() + 7);
+        }
+      } else {
+        boekingen.push({ zaal, naam, mail, start: starttijd, stop: stoptijd, datum: begindatum });
+      }
+
+      Promise.all(boekingen.map(b => {
+        const fd = new FormData();
+        fd.append('action', 'add');
+        fd.append('zaal', b.zaal);
+        fd.append('datum', b.datum);
+        fd.append('start', b.start);
+        fd.append('stop', b.stop);
+        fd.append('naam', b.naam);
+        fd.append('mail', b.mail);
+
+        return fetch(scriptURL, { method: 'POST', body: fd });
+      }))
+      .then(responses => Promise.all(responses.map(r => r.text())))
+      .then(results => {
+        alert('Boekingen toegevoegd:\n' + results.join('\n'));
         loadCalendar();
       });
     });
@@ -85,18 +124,15 @@
       fetch(scriptURL)
         .then(res => res.json())
         .then(data => {
-          console.log("Data ontvangen:", data);
-
-          // Events inladen
           allEvents = data.boekingen.map(entry => ({
             id: entry.boekingsnr,
             title: entry.zaal + ' - ' + entry.naam,
             start: entry.datum + 'T' + entry.start,
             end: entry.datum + 'T' + entry.stop,
-            zaal: entry.zaal
+            zaal: entry.zaal,
+            color: entry.herhaling === 'true' ? 'lightblue' : ''
           }));
 
-          // Zalen in select dropdowns zetten
           const zaalSelect = document.getElementById('zaal-select');
           const zaalFilter = document.getElementById('zaal-filter');
           zaalSelect.innerHTML = '';
