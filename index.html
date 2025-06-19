@@ -51,7 +51,7 @@
 
   <div id="calendar"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
   <script>
     const scriptURL = 'https://script.google.com/macros/s/AKfycbz-VWWh_z5nOl1fsMA5Wen3D1cTz5u4Qy6FAojue3DR9U43dHXfBYA7FQzTjo5WIQZq/exec';
     let allEvents = [];
@@ -94,6 +94,7 @@
       fetch(scriptURL)
         .then(res => res.json())
         .then(data => {
+          console.log("Data ontvangen:", data);
           allEvents = data.map(entry => ({
             id: entry.boekingsnr,
             title: entry.zaal + ' - ' + entry.naam,
@@ -101,17 +102,14 @@
             end: entry.datum + 'T' + entry.stop,
             zaal: entry.zaal
           }));
-
+          console.log("Events gegenereerd:", allEvents);
           renderCalendar(filter);
         });
     }
 
     function renderCalendar(filter) {
       const calendarEl = document.getElementById('calendar');
-
-      const filteredEvents = filter === "ALL"
-        ? allEvents
-        : allEvents.filter(event => event.zaal === filter);
+      const filteredEvents = filter === "ALL" ? allEvents : allEvents.filter(event => event.zaal === filter);
 
       if (calendar) {
         calendar.removeAllEvents();
@@ -119,7 +117,7 @@
         return;
       }
 
-      calendar = new FullCalendar.Calendar(calendarEl, {
+      calendar = new Calendar(calendarEl, {
         initialView: 'timeGridWeek',
         timeZone: 'local',
         events: filteredEvents,
