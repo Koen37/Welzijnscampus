@@ -17,11 +17,7 @@
 
   <form id="booking-form">
     <label for="zaal">Kies een zaal:</label>
-    <select name="zaal" required>
-      <option value="Zaal 1">Zaal 1</option>
-      <option value="Zaal 2">Zaal 2</option>
-      <option value="Zaal 3">Zaal 3</option>
-    </select>
+    <select name="zaal" id="zaal-select" required></select>
 
     <label for="datum">Datum:</label>
     <input type="date" name="datum" required>
@@ -42,12 +38,7 @@
   </form>
 
   <label for="zaal-filter">Toon kalender voor:</label>
-  <select id="zaal-filter">
-    <option value="ALL">Alle zalen</option>
-    <option value="Zaal 1">Zaal 1</option>
-    <option value="Zaal 2">Zaal 2</option>
-    <option value="Zaal 3">Zaal 3</option>
-  </select>
+  <select id="zaal-filter"></select>
 
   <div id="calendar"></div>
 
@@ -95,14 +86,29 @@
         .then(res => res.json())
         .then(data => {
           console.log("Data ontvangen:", data);
-          allEvents = data.map(entry => ({
+
+          // Events inladen
+          allEvents = data.boekingen.map(entry => ({
             id: entry.boekingsnr,
             title: entry.zaal + ' - ' + entry.naam,
             start: entry.datum + 'T' + entry.start,
             end: entry.datum + 'T' + entry.stop,
             zaal: entry.zaal
           }));
-          console.log("Events gegenereerd:", allEvents);
+
+          // Zalen in select dropdowns zetten
+          const zaalSelect = document.getElementById('zaal-select');
+          const zaalFilter = document.getElementById('zaal-filter');
+          zaalSelect.innerHTML = '';
+          zaalFilter.innerHTML = '<option value="ALL">Alle zalen</option>';
+
+          data.zalen.forEach(zaal => {
+            const opt1 = new Option(zaal, zaal);
+            const opt2 = new Option(zaal, zaal);
+            zaalSelect.add(opt1);
+            zaalFilter.add(opt2);
+          });
+
           renderCalendar(filter);
         });
     }
