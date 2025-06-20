@@ -54,192 +54,192 @@
 
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbz-VWWh_z5nOl1fsMA5Wen3D1cTz5u4Qy6FAojue3DR9U43dHXfBYA7FQzTjo5WIQZq/exec';
-    let allEvents = [];
-    let calendar;
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbz-VWWh_z5nOl1fsMA5Wen3D1cTz5u4Qy6FAojue3DR9U43dHXfBYA7FQzTjo5WIQZq/exec';
+  let allEvents = [];
+  let calendar;
 
-    document.getElementById('booking-form').addEventListener('submit', function(e) {
-      e.preventDefault();
+  document.getElementById('booking-form').addEventListener('submit', function(e) {
+    e.preventDefault();
 
-      const formData = new FormData(this);
-      const herhaal = document.getElementById('herhaal').checked;
-      const einddatum = document.getElementById('einddatum').value;
-      const zaal = formData.get('zaal');
-      const naam = formData.get('naam');
-      const mail = formData.get('mail');
-      const starttijd = formData.get('start');
-      const stoptijd = formData.get('stop');
-      const begindatum = formData.get('datum');
+    const formData = new FormData(this);
+    const herhaal = document.getElementById('herhaal').checked;
+    const einddatum = document.getElementById('einddatum').value;
+    const zaal = formData.get('zaal');
+    const naam = formData.get('naam');
+    const mail = formData.get('mail');
+    const starttijd = formData.get('start');
+    const stoptijd = formData.get('stop');
+    const begindatum = formData.get('datum');
 
-      if (herhaal && !einddatum) {
-        alert('Geef een einddatum op voor de herhaling.');
-        return;
-      }
-
-      const boekingen = [];
-
-      if (herhaal && einddatum) {
-        let current = new Date(begindatum);
-        const end = new Date(einddatum);
-        while (current <= end) {
-          const datumStr = current.toISOString().split('T')[0];
-          boekingen.push({ zaal, naam, mail, start: starttijd, stop: stoptijd, datum: datumStr, kleur: 'lightblue' });
-          current.setDate(current.getDate() + 7);
-        }
-      } else {
-        boekingen.push({ zaal, naam, mail, start: starttijd, stop: stoptijd, datum: begindatum });
-      }
-
-      verzendBoekingen(boekingen);
-    });
-
-    async function verzendBoekingen(boekingen) {
-      const meldingenDiv = document.getElementById('meldingen');
-      meldingenDiv.innerHTML = '<strong>Verwerken boekingen:</strong><br>';
-
-      for (const b of boekingen) {
-        const startNieuw = new Date(`${b.datum}T${b.start}`);
-        const eindNieuw = new Date(`${b.datum}T${b.stop}`);
-        const conflict = allEvents.some(ev => {
-          if (ev.zaal !== b.zaal) return false;
-          const evStart = new Date(ev.start);
-          const evEnd = new Date(ev.end);
-          return startNieuw < evEnd && eindNieuw > evStart;
-        });
-
-        if (conflict) {
-          meldingenDiv.innerHTML += `❌ ${b.datum}: zaal bezet<br>`;
-          continue;
-        }
-
-        const fd = new FormData();
-        fd.append('action', 'add');
-        fd.append('zaal', b.zaal);
-        fd.append('datum', b.datum);
-        fd.append('start', b.start);
-        fd.append('stop', b.stop);
-        fd.append('naam', b.naam);
-        fd.append('mail', b.mail);
-        fd.append('herhaling', b.kleur ? 'true' : 'false');
-
-        try {
-          const res = await fetch(scriptURL, { method: 'POST', body: fd });
-          const tekst = await res.text();
-          if (!res.ok) throw new Error(tekst);
-          meldingenDiv.innerHTML += `✅ ${b.datum}: geboekt<br>`;
-        } catch (err) {
-          meldingenDiv.innerHTML += `❌ ${b.datum}: fout – ${err.message}<br>`;
-        }
-
-        await new Promise(r => setTimeout(r, 300));
-      }
-
-      meldingenDiv.innerHTML += '<br><strong>Verwerking voltooid.</strong>';
-      loadCalendar();
+    if (herhaal && !einddatum) {
+      alert('Geef een einddatum op voor de herhaling.');
+      return;
     }
 
-    function cancelBooking(id, mail) {
-      const formData = new FormData();
-      formData.append('action', 'delete');
-      formData.append('id', id);
-      formData.append('mail', mail);
+    const boekingen = [];
+    const reeksId = crypto.randomUUID(); // unieke reeks-ID
 
-      fetch(scriptURL, { method: 'POST', body: formData })
-        .then(res => res.text())
-        .then(result => {
-          alert(result);
-          loadCalendar();
-        });
-    }
-
-    function loadCalendar(filter = "ALL") {
-      fetch(scriptURL)
-        .then(res => res.json())
-        .then(data => {
-          allEvents = data.boekingen.map(entry => ({
-            id: entry.boekingsnr,
-            title: entry.zaal + ' - ' + entry.naam,
-            start: entry.datum + 'T' + entry.start,
-            end: entry.datum + 'T' + entry.stop,
-            zaal: entry.zaal,
-            naam: entry.naam,
-            color: entry.herhaling?.toLowerCase() === 'true' ? 'lightblue' : 'lightgreen'
-          }));
-
-          const zaalSelect = document.getElementById('zaal-select');
-          const zaalFilter = document.getElementById('zaal-filter');
-          zaalSelect.innerHTML = '';
-          zaalFilter.innerHTML = '<option value="ALL">Alle zalen</option>';
-
-          data.zalen.forEach(zaal => {
-            zaalSelect.add(new Option(zaal, zaal));
-            zaalFilter.add(new Option(zaal, zaal));
-          });
-
-          renderCalendar(filter);
-        });
-    }
-
-    function renderCalendar(filter) {
-      const calendarEl = document.getElementById('calendar');
-      const filteredEvents = filter === "ALL" ? allEvents : allEvents.filter(event => event.zaal === filter);
-
-      if (calendar) {
-        calendar.removeAllEvents();
-        calendar.addEventSource(filteredEvents);
-        return;
+    if (herhaal && einddatum) {
+      let current = new Date(begindatum);
+      const end = new Date(einddatum);
+      while (current <= end) {
+        const datumStr = current.toISOString().split('T')[0];
+        boekingen.push({ zaal, naam, mail, start: starttijd, stop: stoptijd, datum: datumStr, kleur: 'lightblue', reeksid: reeksId });
+        current.setDate(current.getDate() + 7);
       }
+    } else {
+      boekingen.push({ zaal, naam, mail, start: starttijd, stop: stoptijd, datum: begindatum });
+    }
 
-      calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'timeGridWeek',
-        timeZone: 'local',
-        events: filteredEvents,
-        eventClick: function(info) {
-          const event = info.event;
-          const isHerhaling = event.color === 'lightblue';
+    verzendBoekingen(boekingen);
+  });
 
-          if (!isHerhaling) {
-            if (confirm(`Boeking van ${event.title} op ${event.start.toLocaleDateString()} annuleren?`)) {
-              const id = event.id;
-              const mail = prompt('Bevestig je e-mailadres:');
-              if (mail) cancelBooking(id, mail);
-            }
-          } else {
-            const keuze = confirm(`Wil je alle volgende boekingen van deze reeks vanaf ${event.start.toLocaleDateString()} verwijderen?\nKlik op OK voor alle volgende, of Annuleer voor enkel deze.`);
-            const mail = prompt('Bevestig je e-mailadres:');
-            if (!mail) return;
+  async function verzendBoekingen(boekingen) {
+    const meldingenDiv = document.getElementById('meldingen');
+    meldingenDiv.innerHTML = '<strong>Verwerken boekingen:</strong><br>';
 
-            if (keuze) {
-              fetch(scriptURL, {
-                method: 'POST',
-                body: new URLSearchParams({
-                  action: 'delete_series',
-                  zaal: event.extendedProps.zaal,
-                  naam: event.extendedProps.naam,
-                  mail: mail,
-                  datum: event.startStr.split('T')[0]
-                })
-              })
-              .then(res => res.text())
-              .then(txt => {
-                alert(txt);
-                loadCalendar();
-              });
-            } else {
-              cancelBooking(event.id, mail);
-            }
-          }
-        }
+    for (const b of boekingen) {
+      const startNieuw = new Date(`${b.datum}T${b.start}`);
+      const eindNieuw = new Date(`${b.datum}T${b.stop}`);
+      const conflict = allEvents.some(ev => {
+        if (ev.zaal !== b.zaal) return false;
+        const evStart = new Date(ev.start);
+        const evEnd = new Date(ev.end);
+        return startNieuw < evEnd && eindNieuw > evStart;
       });
 
-      calendar.render();
+      if (conflict) {
+        meldingenDiv.innerHTML += `❌ ${b.datum}: zaal bezet<br>`;
+        continue;
+      }
+
+      const fd = new FormData();
+      fd.append('action', 'add');
+      fd.append('zaal', b.zaal);
+      fd.append('datum', b.datum);
+      fd.append('start', b.start);
+      fd.append('stop', b.stop);
+      fd.append('naam', b.naam);
+      fd.append('mail', b.mail);
+      fd.append('herhaling', b.kleur ? 'true' : 'false');
+      if (b.reeksid) fd.append('reeksid', b.reeksid);
+
+      try {
+        const res = await fetch(scriptURL, { method: 'POST', body: fd });
+        const tekst = await res.text();
+        if (!res.ok) throw new Error(tekst);
+        meldingenDiv.innerHTML += `✅ ${b.datum}: geboekt<br>`;
+      } catch (err) {
+        meldingenDiv.innerHTML += `❌ ${b.datum}: fout – ${err.message}<br>`;
+      }
+
+      await new Promise(r => setTimeout(r, 300));
     }
 
-    document.getElementById('zaal-filter').addEventListener('change', function () {
-      renderCalendar(this.value);
+    meldingenDiv.innerHTML += '<br><strong>Verwerking voltooid.</strong>';
+    loadCalendar();
+  }
+
+  function cancelBooking(id, mail) {
+    const formData = new FormData();
+    formData.append('action', 'delete');
+    formData.append('id', id);
+    formData.append('mail', mail);
+
+    fetch(scriptURL, { method: 'POST', body: formData })
+      .then(res => res.text())
+      .then(result => {
+        alert(result);
+        loadCalendar();
+      });
+  }
+
+  function loadCalendar(filter = "ALL") {
+    fetch(scriptURL)
+      .then(res => res.json())
+      .then(data => {
+        allEvents = data.boekingen.map(entry => ({
+          id: entry.boekingsnr,
+          title: entry.zaal + ' - ' + entry.naam,
+          start: entry.datum + 'T' + entry.start,
+          end: entry.datum + 'T' + entry.stop,
+          zaal: entry.zaal,
+          naam: entry.naam,
+          color: entry.herhaling?.toLowerCase() === 'true' ? 'lightblue' : 'lightgreen',
+          reeksid: entry.reeksid
+        }));
+
+        const zaalSelect = document.getElementById('zaal-select');
+        const zaalFilter = document.getElementById('zaal-filter');
+        zaalSelect.innerHTML = '';
+        zaalFilter.innerHTML = '<option value="ALL">Alle zalen</option>';
+
+        data.zalen.forEach(zaal => {
+          zaalSelect.add(new Option(zaal, zaal));
+          zaalFilter.add(new Option(zaal, zaal));
+        });
+
+        renderCalendar(filter);
+      });
+  }
+
+  function renderCalendar(filter) {
+    const calendarEl = document.getElementById('calendar');
+    const filteredEvents = filter === "ALL" ? allEvents : allEvents.filter(event => event.zaal === filter);
+
+    if (calendar) {
+      calendar.removeAllEvents();
+      calendar.addEventSource(filteredEvents);
+      return;
+    }
+
+    calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'timeGridWeek',
+      timeZone: 'local',
+      events: filteredEvents,
+      eventClick: function(info) {
+        const event = info.event;
+        const isHerhaling = event.color === 'lightblue';
+
+        const mail = prompt('Bevestig je e-mailadres:');
+        if (!mail) return;
+
+        if (!isHerhaling) {
+          if (confirm(`Boeking van ${event.title} op ${event.start.toLocaleDateString()} annuleren?`)) {
+            cancelBooking(event.id, mail);
+          }
+        } else {
+          const keuze = confirm(`Wil je alle volgende boekingen van deze reeks vanaf ${event.start.toLocaleDateString()} verwijderen?\nKlik op OK voor alle volgende, of Annuleer voor enkel deze.`);
+          if (keuze) {
+            fetch(scriptURL, {
+              method: 'POST',
+              body: new URLSearchParams({
+                action: 'delete_series',
+                reeksid: event.extendedProps.reeksid,
+                mail: mail,
+                datum: event.startStr.split('T')[0]
+              })
+            })
+            .then(res => res.text())
+            .then(txt => {
+              alert(txt);
+              loadCalendar();
+            });
+          } else {
+            cancelBooking(event.id, mail);
+          }
+        }
+      }
     });
 
-    loadCalendar();
-  </script>
+    calendar.render();
+  }
+
+  document.getElementById('zaal-filter').addEventListener('change', function () {
+    renderCalendar(this.value);
+  });
+
+  loadCalendar();
+</script>
 </body>
 </html>
