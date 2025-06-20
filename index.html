@@ -15,6 +15,14 @@
 <body>
   <h1>Reserveringssysteem voor Lokalen</h1>
 
+  <!-- Kalender eerst -->
+  <label for="zaal-filter">Toon kalender voor:</label>
+  <select id="zaal-filter"></select>
+
+  <div id="calendar"></div>
+
+  <!-- Formulier daarna -->
+  <h2 style="margin-top: 40px;">Nieuwe reservering</h2>
   <form id="booking-form">
     <label for="zaal">Kies een zaal:</label>
     <select name="zaal" id="zaal-select" required></select>
@@ -34,14 +42,14 @@
     <label for="mail">E-mailadres:</label>
     <input type="email" name="mail" required>
     
-<div style="margin-top: 15px;">
-  <label>
-    <input type="checkbox" id="herhaal" name="herhaal"> Herhaal wekelijks
-  </label>
+    <div style="margin-top: 15px;">
+      <label>
+        <input type="checkbox" id="herhaal" name="herhaal"> Herhaal wekelijks
+      </label>
 
-  <label for="einddatum" style="margin-top: 10px;">Herhalen tot en met:</label>
-  <input type="date" name="einddatum" id="einddatum">
-</div>
+      <label for="einddatum" style="margin-top: 10px;">Herhalen tot en met:</label>
+      <input type="date" name="einddatum" id="einddatum">
+    </div>
 
     <button type="submit">Reserveer</button>
   </form>
