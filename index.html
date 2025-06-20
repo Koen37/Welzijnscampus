@@ -86,24 +86,74 @@
         boekingen.push({ zaal, naam, mail, start: starttijd, stop: stoptijd, datum: begindatum });
       }
 
-      Promise.all(boekingen.map(b => {
-        const fd = new FormData();
-        fd.append('action', 'add');
-        fd.append('zaal', b.zaal);
-        fd.append('datum', b.datum);
-        fd.append('start', b.start);
-        fd.append('stop', b.stop);
-        fd.append('naam', b.naam);
-        fd.append('mail', b.mail);
+     <script>
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbz-VWWh_z5nOl1fsMA5Wen3D1cTz5u4Qy6FAojue3DR9U43dHXfBYA7FQzTjo5WIQZq/exec';
+  let allEvents = [];
+  let calendar;
 
-        return fetch(scriptURL, { method: 'POST', body: fd });
-      }))
-      .then(responses => Promise.all(responses.map(r => r.text())))
-      .then(results => {
-        alert('Boekingen toegevoegd:\n' + results.join('\n'));
-        loadCalendar();
-      });
-    });
+  document.getElementById('booking-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const herhaal = document.getElementById('herhaal').checked;
+    const einddatum = document.getElementById('einddatum').value;
+
+    const zaal = formData.get('zaal');
+    const naam = formData.get('naam');
+    const mail = formData.get('mail');
+    const starttijd = formData.get('start');
+    const stoptijd = formData.get('stop');
+    const begindatum = formData.get('datum');
+
+    const boekingen = [];
+
+    if (herhaal && einddatum) {
+      let current = new Date(begindatum);
+      const end = new Date(einddatum);
+
+      while (current <= end) {
+        const datumStr = current.toISOString().split('T')[0];
+        boekingen.push({ zaal, naam, mail, start: starttijd, stop: stoptijd, datum: datumStr, kleur: 'lightblue' });
+        current.setDate(current.getDate() + 7);
+      }
+    } else {
+      boekingen.push({ zaal, naam, mail, start: starttijd, stop: stoptijd, datum: begindatum });
+    }
+
+    verzendBoekingen(boekingen);
+  });
+
+  async function verzendBoekingen(boekingen) {
+    for (const b of boekingen) {
+      const fd = new FormData();
+      fd.append('action', 'add');
+      fd.append('zaal', b.zaal);
+      fd.append('datum', b.datum);
+      fd.append('start', b.start);
+      fd.append('stop', b.stop);
+      fd.append('naam', b.naam);
+      fd.append('mail', b.mail);
+      fd.append('herhaling', b.kleur ? 'true' : 'false');
+
+      try {
+        const res = await fetch(scriptURL, { method: 'POST', body: fd });
+        const tekst = await res.text();
+        if (!res.ok) throw new Error(tekst);
+        console.log(`Boeking op ${b.datum} toegevoegd.`);
+      } catch (err) {
+        alert(`Fout bij boeking op ${b.datum}: ${err.message}`);
+        return;
+      }
+
+      await new Promise(r => setTimeout(r, 300)); // 300ms vertraging tussen boekingen
+    }
+
+    alert('Alle boekingen toegevoegd.');
+    loadCalendar();
+  }
+
+  // De rest van je script (cancelBooking, loadCalendar, renderCalendar...) blijft ongewijzigd
+</script>
 
     function cancelBooking(id, mail) {
       const formData = new FormData();
