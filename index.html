@@ -71,6 +71,11 @@
       const stoptijd = formData.get('stop');
       const begindatum = formData.get('datum');
 
+      if (herhaal && !einddatum) {
+  alert('Geef een einddatum op voor de herhaling.');
+  return;
+}
+
       const boekingen = [];
 
       if (herhaal && einddatum) {
@@ -119,7 +124,6 @@
   }
 
   // De rest van je script (cancelBooking, loadCalendar, renderCalendar...) blijft ongewijzigd
-</script>
 
     function cancelBooking(id, mail) {
       const formData = new FormData();
