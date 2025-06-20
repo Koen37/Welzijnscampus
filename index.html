@@ -86,40 +86,6 @@
         boekingen.push({ zaal, naam, mail, start: starttijd, stop: stoptijd, datum: begindatum });
       }
 
-     <script>
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbz-VWWh_z5nOl1fsMA5Wen3D1cTz5u4Qy6FAojue3DR9U43dHXfBYA7FQzTjo5WIQZq/exec';
-  let allEvents = [];
-  let calendar;
-
-  document.getElementById('booking-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    const formData = new FormData(this);
-    const herhaal = document.getElementById('herhaal').checked;
-    const einddatum = document.getElementById('einddatum').value;
-
-    const zaal = formData.get('zaal');
-    const naam = formData.get('naam');
-    const mail = formData.get('mail');
-    const starttijd = formData.get('start');
-    const stoptijd = formData.get('stop');
-    const begindatum = formData.get('datum');
-
-    const boekingen = [];
-
-    if (herhaal && einddatum) {
-      let current = new Date(begindatum);
-      const end = new Date(einddatum);
-
-      while (current <= end) {
-        const datumStr = current.toISOString().split('T')[0];
-        boekingen.push({ zaal, naam, mail, start: starttijd, stop: stoptijd, datum: datumStr, kleur: 'lightblue' });
-        current.setDate(current.getDate() + 7);
-      }
-    } else {
-      boekingen.push({ zaal, naam, mail, start: starttijd, stop: stoptijd, datum: begindatum });
-    }
-
     verzendBoekingen(boekingen);
   });
 
