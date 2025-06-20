@@ -150,7 +150,7 @@
             start: entry.datum + 'T' + entry.start,
             end: entry.datum + 'T' + entry.stop,
             zaal: entry.zaal,
-            color: entry.herhaling === 'true' ? 'lightblue' : ''
+            color: entry.herhaling?.toString().toLowerCase() === 'true' ? 'lightblue' : ''
           }));
 
           const zaalSelect = document.getElementById('zaal-select');
