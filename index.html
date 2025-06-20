@@ -109,7 +109,10 @@
       if (ev.zaal !== b.zaal) return false;
       const evStart = new Date(ev.start);
       const evEnd = new Date(ev.end);
-      return (startNieuw < evEnd && eindNieuw > evStart); // overlap
+      return (
+  startNieuw.getTime() < evEnd.getTime() &&
+  eindNieuw.getTime() > evStart.getTime()
+);
     });
   });
 
