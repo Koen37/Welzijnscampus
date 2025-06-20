@@ -191,49 +191,44 @@
         return;
       }
 
-      calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'timeGridWeek',
-        timeZone: 'local',
-        events: filteredEvents,
-        eventClick: function(info) {
-          const event = info.event;
-          const id = event.id;
-          const datum = event.startStr.split('T')[0];
-          const zaal = event.extendedProps.zaal;
-          const naam = event.extendedProps.naam;
-          const mail = prompt('Bevestig je e-mailadres om te annuleren:');
-          if (!mail) return;
+    eventClick: function(info) {
+  const event = info.event;
+  const isHerhaling = event.extendedProps.color === 'lightblue'; // of gebruik eventueel een apart veld
 
-          const alleHerhalingen = event.extendedProps.color === 'lightblue';
+  if (!isHerhaling) {
+    if (confirm(`Boeking van ${event.title} op ${event.start.toLocaleDateString()} annuleren?`)) {
+      const id = event.id;
+      const mail = prompt('Bevestig je e-mailadres:');
+      if (mail) cancelBooking(id, mail);
+    }
+  } else {
+    const keuze = confirm(`Wil je alle volgende boekingen van deze reeks vanaf ${event.start.toLocaleDateString()} verwijderen?\nKlik op OK voor alle volgende, of Annuleer voor enkel deze.`);
+    const mail = prompt('Bevestig je e-mailadres:');
+    if (!mail) return;
 
-          if (alleHerhalingen) {
-            const keuze = confirm(`Klik OK om ALLE toekomstige herhalingen van "${naam}" vanaf ${datum} te annuleren.\nKlik ANNULEREN om alleen deze te verwijderen.`);
-            const formData = new FormData();
-            if (keuze) {
-              formData.append('action', 'delete_series');
-              formData.append('zaal', zaal);
-              formData.append('naam', naam);
-              formData.append('mail', mail);
-              formData.append('datum', datum);
-            } else {
-              formData.append('action', 'delete');
-              formData.append('id', id);
-              formData.append('mail', mail);
-            }
-
-            fetch(scriptURL, { method: 'POST', body: formData })
-              .then(res => res.text())
-              .then(result => {
-                alert(result);
-                loadCalendar();
-              });
-
-          } else {
-            if (confirm(`Deze boeking van "${naam}" verwijderen?`)) {
-              cancelBooking(id, mail);
-            }
-          }
-        }
+    if (keuze) {
+      // Alle volgende
+      fetch(scriptURL, {
+        method: 'POST',
+        body: new URLSearchParams({
+          action: 'delete_series',
+          zaal: event.extendedProps.zaal,
+          naam: event.title.split(' - ')[1],
+          mail: mail,
+          datum: event.startStr.split('T')[0]
+        })
+      })
+      .then(res => res.text())
+      .then(txt => {
+        alert(txt);
+        loadCalendar();
+      });
+    } else {
+      // Enkel deze
+      cancelBooking(event.id, mail);
+    }
+  }
+}
       });
 
       calendar.render();
