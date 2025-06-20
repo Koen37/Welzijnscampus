@@ -22,6 +22,7 @@
 
   <!-- Formulier daarna -->
   <h2 style="margin-top: 40px;">Nieuwe reservering</h2>
+  <div id="meldingen" style="margin-top: 10px; padding: 10px; border: 1px solid #ccc; max-width: 600px;"></div>
   <form id="booking-form">
     <label for="zaal">Kies een zaal:</label>
     <select name="zaal" id="zaal-select" required></select>
@@ -112,33 +113,38 @@
     });
 
     async function verzendBoekingen(boekingen) {
-      for (const b of boekingen) {
-        const fd = new FormData();
-        fd.append('action', 'add');
-        fd.append('zaal', b.zaal);
-        fd.append('datum', b.datum);
-        fd.append('start', b.start);
-        fd.append('stop', b.stop);
-        fd.append('naam', b.naam);
-        fd.append('mail', b.mail);
-        fd.append('herhaling', b.kleur ? 'true' : 'false');
+  const meldingenDiv = document.getElementById('meldingen');
+  meldingenDiv.innerHTML = '<strong>Verwerken boekingen:</strong><br>';
 
-        try {
-          const res = await fetch(scriptURL, { method: 'POST', body: fd });
-          const tekst = await res.text();
-          if (!res.ok) throw new Error(tekst);
-          console.log(`Boeking op ${b.datum} toegevoegd.`);
-        } catch (err) {
-          alert(`Fout bij boeking op ${b.datum}: ${err.message}`);
-          return;
-        }
+  for (const b of boekingen) {
+    const fd = new FormData();
+    fd.append('action', 'add');
+    fd.append('zaal', b.zaal);
+    fd.append('datum', b.datum);
+    fd.append('start', b.start);
+    fd.append('stop', b.stop);
+    fd.append('naam', b.naam);
+    fd.append('mail', b.mail);
+    fd.append('herhaling', b.kleur ? 'true' : 'false');
 
-        await new Promise(r => setTimeout(r, 300));
+    try {
+      const res = await fetch(scriptURL, { method: 'POST', body: fd });
+      const tekst = await res.text();
+      if (!res.ok || tekst.startsWith("Conflict")) {
+        throw new Error(tekst);
       }
 
-      alert('Alle boekingen toegevoegd.');
-      loadCalendar();
+      meldingenDiv.innerHTML += `✅ ${b.datum} – geboekt<br>`;
+    } catch (err) {
+      meldingenDiv.innerHTML += `❌ ${b.datum} – fout: ${err.message}<br>`;
     }
+
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  meldingenDiv.innerHTML += '<br><strong>Klaar.</strong>';
+  loadCalendar();
+}
 
     function cancelBooking(id, mail) {
       const formData = new FormData();
