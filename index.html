@@ -15,14 +15,16 @@
 <body>
   <h1>Reserveringssysteem voor Lokalen</h1>
 
-  <!-- Kalender eerst -->
+  <!-- Kalender -->
   <label for="zaal-filter">Toon kalender voor:</label>
   <select id="zaal-filter"></select>
   <div id="calendar"></div>
 
-  <!-- Formulier daarna -->
-  <h2 style="margin-top: 40px;">Nieuwe reservering</h2>
+  <!-- Meldingen -->
   <div id="meldingen" style="margin-top: 10px; padding: 10px; border: 1px solid #ccc; max-width: 600px;"></div>
+
+  <!-- Formulier -->
+  <h2 style="margin-top: 40px;">Nieuwe reservering</h2>
   <form id="booking-form">
     <label for="zaal">Kies een zaal:</label>
     <select name="zaal" id="zaal-select" required></select>
@@ -41,11 +43,9 @@
 
     <label for="mail">E-mailadres:</label>
     <input type="email" name="mail" required>
-    
+
     <div style="margin-top: 15px;">
-      <label>
-        <input type="checkbox" id="herhaal" name="herhaal"> Herhaal wekelijks
-      </label>
+      <label><input type="checkbox" id="herhaal" name="herhaal"> Herhaal wekelijks</label>
       <label for="einddatum" style="margin-top: 10px;">Herhalen tot en met:</label>
       <input type="date" name="einddatum" id="einddatum">
     </div>
@@ -65,7 +65,6 @@
       const formData = new FormData(this);
       const herhaal = document.getElementById('herhaal').checked;
       const einddatum = document.getElementById('einddatum').value;
-
       const zaal = formData.get('zaal');
       const naam = formData.get('naam');
       const mail = formData.get('mail');
@@ -92,74 +91,53 @@
         boekingen.push({ zaal, naam, mail, start: starttijd, stop: stoptijd, datum: begindatum });
       }
 
-      // ✅ Controleer op overlap
-      const conflict = boekingen.find(b => {
+      verzendBoekingen(boekingen);
+    });
+
+    async function verzendBoekingen(boekingen) {
+      const meldingenDiv = document.getElementById('meldingen');
+      meldingenDiv.innerHTML = '<strong>Verwerken boekingen:</strong><br>';
+
+      for (const b of boekingen) {
         const startNieuw = new Date(`${b.datum}T${b.start}`);
         const eindNieuw = new Date(`${b.datum}T${b.stop}`);
-        return allEvents.some(ev => {
+        const conflict = allEvents.some(ev => {
           if (ev.zaal !== b.zaal) return false;
           const evStart = new Date(ev.start);
           const evEnd = new Date(ev.end);
           return startNieuw < evEnd && eindNieuw > evStart;
         });
-      });
 
-      if (conflict) {
-        alert(`Zaal ${conflict.zaal} is al bezet op ${conflict.datum} tussen ${conflict.start} en ${conflict.stop}.`);
-        return;
+        if (conflict) {
+          meldingenDiv.innerHTML += `❌ ${b.datum}: zaal bezet<br>`;
+          continue;
+        }
+
+        const fd = new FormData();
+        fd.append('action', 'add');
+        fd.append('zaal', b.zaal);
+        fd.append('datum', b.datum);
+        fd.append('start', b.start);
+        fd.append('stop', b.stop);
+        fd.append('naam', b.naam);
+        fd.append('mail', b.mail);
+        fd.append('herhaling', b.kleur ? 'true' : 'false');
+
+        try {
+          const res = await fetch(scriptURL, { method: 'POST', body: fd });
+          const tekst = await res.text();
+          if (!res.ok) throw new Error(tekst);
+          meldingenDiv.innerHTML += `✅ ${b.datum}: geboekt<br>`;
+        } catch (err) {
+          meldingenDiv.innerHTML += `❌ ${b.datum}: fout – ${err.message}<br>`;
+        }
+
+        await new Promise(r => setTimeout(r, 300));
       }
 
-      verzendBoekingen(boekingen);
-    });
-
-  async function verzendBoekingen(boekingen) {
-  const meldingenDiv = document.getElementById('meldingen');
-  meldingenDiv.innerHTML = '<strong>Verwerken boekingen:</strong><br>';
-
-  for (const b of boekingen) {
-    // Conflictcontrole vooraf
-    const startNieuw = new Date(`${b.datum}T${b.start}`);
-    const eindNieuw = new Date(`${b.datum}T${b.stop}`);
-
-    const conflict = allEvents.some(ev => {
-      if (ev.zaal !== b.zaal) return false;
-      const evStart = new Date(ev.start);
-      const evEnd = new Date(ev.end);
-      return startNieuw < evEnd && eindNieuw > evStart;
-    });
-
-    if (conflict) {
-      meldingenDiv.innerHTML += `❌ ${b.datum}: zaal bezet<br>`;
-      continue; // sla deze over
+      meldingenDiv.innerHTML += '<br><strong>Verwerking voltooid.</strong>';
+      loadCalendar();
     }
-
-    // Geen conflict → verzenden
-    const fd = new FormData();
-    fd.append('action', 'add');
-    fd.append('zaal', b.zaal);
-    fd.append('datum', b.datum);
-    fd.append('start', b.start);
-    fd.append('stop', b.stop);
-    fd.append('naam', b.naam);
-    fd.append('mail', b.mail);
-    fd.append('herhaling', b.kleur ? 'true' : 'false');
-
-    try {
-      const res = await fetch(scriptURL, { method: 'POST', body: fd });
-      const tekst = await res.text();
-      if (!res.ok) throw new Error(tekst);
-
-      meldingenDiv.innerHTML += `✅ ${b.datum}: geboekt<br>`;
-    } catch (err) {
-      meldingenDiv.innerHTML += `❌ ${b.datum}: fout bij verzenden – ${err.message}<br>`;
-    }
-
-    await new Promise(r => setTimeout(r, 300));
-  }
-
-  meldingenDiv.innerHTML += '<br><strong>Verwerking voltooid.</strong>';
-  loadCalendar();
-}
 
     function cancelBooking(id, mail) {
       const formData = new FormData();
@@ -167,15 +145,12 @@
       formData.append('id', id);
       formData.append('mail', mail);
 
-      fetch(scriptURL, {
-        method: 'POST',
-        body: formData
-      })
-      .then(res => res.text())
-      .then(result => {
-        alert(result);
-        loadCalendar();
-      });
+      fetch(scriptURL, { method: 'POST', body: formData })
+        .then(res => res.text())
+        .then(result => {
+          alert(result);
+          loadCalendar();
+        });
     }
 
     function loadCalendar(filter = "ALL") {
@@ -188,7 +163,8 @@
             start: entry.datum + 'T' + entry.start,
             end: entry.datum + 'T' + entry.stop,
             zaal: entry.zaal,
-            color: entry.herhaling?.toString().toLowerCase() === 'true' ? 'lightblue' : 'lightgreen'
+            naam: entry.naam,
+            color: entry.herhaling?.toLowerCase() === 'true' ? 'lightblue' : 'lightgreen'
           }));
 
           const zaalSelect = document.getElementById('zaal-select');
@@ -220,10 +196,42 @@
         timeZone: 'local',
         events: filteredEvents,
         eventClick: function(info) {
-          if (confirm(`Boeking van ${info.event.title} annuleren?`)) {
-            const id = info.event.id;
-            const mail = prompt('Bevestig je e-mailadres om te annuleren:');
-            if (mail) cancelBooking(id, mail);
+          const event = info.event;
+          const id = event.id;
+          const datum = event.startStr.split('T')[0];
+          const zaal = event.extendedProps.zaal;
+          const naam = event.extendedProps.naam;
+          const mail = prompt('Bevestig je e-mailadres om te annuleren:');
+          if (!mail) return;
+
+          const alleHerhalingen = event.extendedProps.color === 'lightblue';
+
+          if (alleHerhalingen) {
+            const keuze = confirm(`Klik OK om ALLE toekomstige herhalingen van "${naam}" vanaf ${datum} te annuleren.\nKlik ANNULEREN om alleen deze te verwijderen.`);
+            const formData = new FormData();
+            if (keuze) {
+              formData.append('action', 'delete_series');
+              formData.append('zaal', zaal);
+              formData.append('naam', naam);
+              formData.append('mail', mail);
+              formData.append('datum', datum);
+            } else {
+              formData.append('action', 'delete');
+              formData.append('id', id);
+              formData.append('mail', mail);
+            }
+
+            fetch(scriptURL, { method: 'POST', body: formData })
+              .then(res => res.text())
+              .then(result => {
+                alert(result);
+                loadCalendar();
+              });
+
+          } else {
+            if (confirm(`Deze boeking van "${naam}" verwijderen?`)) {
+              cancelBooking(id, mail);
+            }
           }
         }
       });
@@ -232,8 +240,7 @@
     }
 
     document.getElementById('zaal-filter').addEventListener('change', function () {
-      const selectedZaal = this.value;
-      renderCalendar(selectedZaal);
+      renderCalendar(this.value);
     });
 
     loadCalendar();
