@@ -3,7 +3,7 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8">
-  <title>Reserveringssysteem Lokalen</title>
+  <title>Welzijnscampus 2: Reservering Lokalen</title>
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
@@ -65,42 +65,62 @@
     let allEvents = [];
     let calendar;
 
-    document.getElementById('booking-form').addEventListener('submit', function(e) {
-      e.preventDefault();
+   document.getElementById('booking-form').addEventListener('submit', function(e) {
+  e.preventDefault();
 
-      const formData = new FormData(this);
-      const herhaal = document.getElementById('herhaal').checked;
-      const einddatum = document.getElementById('einddatum').value;
+  const formData = new FormData(this);
+  const herhaal = document.getElementById('herhaal').checked;
+  const einddatum = document.getElementById('einddatum').value;
 
-      const zaal = formData.get('zaal');
-      const naam = formData.get('naam');
-      const mail = formData.get('mail');
-      const starttijd = formData.get('start');
-      const stoptijd = formData.get('stop');
-      const begindatum = formData.get('datum');
+  const zaal = formData.get('zaal');
+  const naam = formData.get('naam');
+  const mail = formData.get('mail');
+  const starttijd = formData.get('start');
+  const stoptijd = formData.get('stop');
+  const begindatum = formData.get('datum');
 
-      if (herhaal && !einddatum) {
-  alert('Geef een einddatum op voor de herhaling.');
-  return;
-}
+  if (herhaal && !einddatum) {
+    alert('Geef een einddatum op voor de herhaling.');
+    return;
+  }
 
-      const boekingen = [];
+  const boekingen = [];
 
-      if (herhaal && einddatum) {
-        let current = new Date(begindatum);
-        const end = new Date(einddatum);
+  // Herhaling of niet: verzamel datums
+  if (herhaal && einddatum) {
+    let current = new Date(begindatum);
+    const end = new Date(einddatum);
 
-        while (current <= end) {
-          const datumStr = current.toISOString().split('T')[0];
-          boekingen.push({ zaal, naam, mail, start: starttijd, stop: stoptijd, datum: datumStr, kleur: 'lightblue' });
-          current.setDate(current.getDate() + 7);
-        }
-      } else {
-        boekingen.push({ zaal, naam, mail, start: starttijd, stop: stoptijd, datum: begindatum });
-      }
+    while (current <= end) {
+      const datumStr = current.toISOString().split('T')[0];
+      boekingen.push({ zaal, naam, mail, start: starttijd, stop: stoptijd, datum: datumStr, kleur: 'lightblue' });
+      current.setDate(current.getDate() + 7);
+    }
+  } else {
+    boekingen.push({ zaal, naam, mail, start: starttijd, stop: stoptijd, datum: begindatum });
+  }
 
-    verzendBoekingen(boekingen);
+  // 🛑 Controleer of zaal al bezet is
+  const conflict = boekingen.find(b => {
+    const startNieuw = new Date(`${b.datum}T${b.start}`);
+    const eindNieuw = new Date(`${b.datum}T${b.stop}`);
+
+    return allEvents.some(ev => {
+      if (ev.zaal !== b.zaal) return false;
+      const evStart = new Date(ev.start);
+      const evEnd = new Date(ev.end);
+      return (startNieuw < evEnd && eindNieuw > evStart); // overlap
+    });
   });
+
+  if (conflict) {
+    alert(`Zaal ${conflict.zaal} is al bezet op ${conflict.datum} tussen ${conflict.start} en ${conflict.stop}.`);
+    return;
+  }
+
+  // Geen conflict → verzenden
+  verzendBoekingen(boekingen);
+});
 
   async function verzendBoekingen(boekingen) {
     for (const b of boekingen) {
