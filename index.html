@@ -112,11 +112,28 @@
       verzendBoekingen(boekingen);
     });
 
-    async function verzendBoekingen(boekingen) {
+  async function verzendBoekingen(boekingen) {
   const meldingenDiv = document.getElementById('meldingen');
   meldingenDiv.innerHTML = '<strong>Verwerken boekingen:</strong><br>';
 
   for (const b of boekingen) {
+    // Conflictcontrole vooraf
+    const startNieuw = new Date(`${b.datum}T${b.start}`);
+    const eindNieuw = new Date(`${b.datum}T${b.stop}`);
+
+    const conflict = allEvents.some(ev => {
+      if (ev.zaal !== b.zaal) return false;
+      const evStart = new Date(ev.start);
+      const evEnd = new Date(ev.end);
+      return startNieuw < evEnd && eindNieuw > evStart;
+    });
+
+    if (conflict) {
+      meldingenDiv.innerHTML += `❌ ${b.datum}: zaal bezet<br>`;
+      continue; // sla deze over
+    }
+
+    // Geen conflict → verzenden
     const fd = new FormData();
     fd.append('action', 'add');
     fd.append('zaal', b.zaal);
@@ -130,19 +147,17 @@
     try {
       const res = await fetch(scriptURL, { method: 'POST', body: fd });
       const tekst = await res.text();
-      if (!res.ok || tekst.startsWith("Conflict")) {
-        throw new Error(tekst);
-      }
+      if (!res.ok) throw new Error(tekst);
 
-      meldingenDiv.innerHTML += `✅ ${b.datum} – geboekt<br>`;
+      meldingenDiv.innerHTML += `✅ ${b.datum}: geboekt<br>`;
     } catch (err) {
-      meldingenDiv.innerHTML += `❌ ${b.datum} – fout: ${err.message}<br>`;
+      meldingenDiv.innerHTML += `❌ ${b.datum}: fout bij verzenden – ${err.message}<br>`;
     }
 
     await new Promise(r => setTimeout(r, 300));
   }
 
-  meldingenDiv.innerHTML += '<br><strong>Klaar.</strong>';
+  meldingenDiv.innerHTML += '<br><strong>Verwerking voltooid.</strong>';
   loadCalendar();
 }
 
