@@ -199,7 +199,7 @@
       events: filteredEvents,
       eventClick: function(info) {
         const event = info.event;
-        const isHerhaling = event.color === 'lightblue';
+        const isHerhaling = !!event.extendedProps.reeksid;
 
         const mail = prompt('Bevestig je e-mailadres:');
         if (!mail) return;
