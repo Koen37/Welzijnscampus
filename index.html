@@ -45,7 +45,7 @@
 
     <div style="margin-top: 15px;">
       <label><input type="checkbox" id="herhaal" name="herhaal"> Herhaal wekelijks</label>
-      <label for="einddatum" style="margin-top: 10px;">Herhalen tot en met:</label>
+      <label for="einddatum">Herhalen tot en met:</label>
       <input type="date" name="einddatum" id="einddatum">
     </div>
 
@@ -54,7 +54,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbz-VWWh_z5nOl1fsMA5Wen3D1cTz5u4Qy6FAojue3DR9U43dHXfBYA7FQzTjo5WIQZq/exec';
+    const scriptURL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HIER';
     let allEvents = [];
     let calendar;
 
@@ -161,13 +161,9 @@
             title: entry.zaal + ' - ' + entry.naam,
             start: entry.datum + 'T' + entry.start,
             end: entry.datum + 'T' + entry.stop,
-            color: entry.herhaling?.toLowerCase() === 'true' ? 'lightblue' : 'lightgreen',
-            extendedProps: {
-              zaal: entry.zaal,
-              naam: entry.naam,
-              mail: entry.mail,
-              herhaling: entry.herhaling?.toLowerCase() === 'true'
-            }
+            zaal: entry.zaal,
+            naam: entry.naam,
+            color: entry.herhaling?.toLowerCase() === 'true' ? 'lightblue' : 'lightgreen'
           }));
 
           const zaalSelect = document.getElementById('zaal-select');
@@ -186,7 +182,7 @@
 
     function renderCalendar(filter) {
       const calendarEl = document.getElementById('calendar');
-      const filteredEvents = filter === "ALL" ? allEvents : allEvents.filter(event => event.extendedProps.zaal === filter);
+      const filteredEvents = filter === "ALL" ? allEvents : allEvents.filter(event => event.zaal === filter);
 
       if (calendar) {
         calendar.removeAllEvents();
@@ -200,17 +196,19 @@
         events: filteredEvents,
         eventClick: function(info) {
           const event = info.event;
-          const isHerhaling = event.extendedProps.herhaling;
-
-          const mail = prompt('Bevestig je e-mailadres:');
-          if (!mail) return;
+          const isHerhaling = event.color === 'lightblue';
 
           if (!isHerhaling) {
             if (confirm(`Boeking van ${event.title} op ${event.start.toLocaleDateString()} annuleren?`)) {
-              cancelBooking(event.id, mail);
+              const id = event.id;
+              const mail = prompt('Bevestig je e-mailadres:');
+              if (mail) cancelBooking(id, mail);
             }
           } else {
             const keuze = confirm(`Wil je alle volgende boekingen van deze reeks vanaf ${event.start.toLocaleDateString()} verwijderen?\nKlik op OK voor alle volgende, of Annuleer voor enkel deze.`);
+            const mail = prompt('Bevestig je e-mailadres:');
+            if (!mail) return;
+
             if (keuze) {
               fetch(scriptURL, {
                 method: 'POST',
