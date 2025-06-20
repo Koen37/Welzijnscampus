@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -162,9 +161,13 @@
             title: entry.zaal + ' - ' + entry.naam,
             start: entry.datum + 'T' + entry.start,
             end: entry.datum + 'T' + entry.stop,
-            zaal: entry.zaal,
-            naam: entry.naam,
-            color: entry.herhaling?.toLowerCase() === 'true' ? 'lightblue' : 'lightgreen'
+            color: entry.herhaling?.toLowerCase() === 'true' ? 'lightblue' : 'lightgreen',
+            extendedProps: {
+              zaal: entry.zaal,
+              naam: entry.naam,
+              mail: entry.mail,
+              herhaling: entry.herhaling?.toLowerCase() === 'true'
+            }
           }));
 
           const zaalSelect = document.getElementById('zaal-select');
@@ -182,59 +185,57 @@
     }
 
     function renderCalendar(filter) {
-  const calendarEl = document.getElementById('calendar');
-  const filteredEvents = filter === "ALL" ? allEvents : allEvents.filter(event => event.zaal === filter);
+      const calendarEl = document.getElementById('calendar');
+      const filteredEvents = filter === "ALL" ? allEvents : allEvents.filter(event => event.extendedProps.zaal === filter);
 
-  if (calendar) {
-    calendar.removeAllEvents();
-    calendar.addEventSource(filteredEvents);
-    return;
-  }
-
-  calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'timeGridWeek',
-    timeZone: 'local',
-    events: filteredEvents,
-    eventClick: function(info) {
-      const event = info.event;
-      const isHerhaling = event.extendedProps.color === 'lightblue';
-
-      if (!isHerhaling) {
-        if (confirm(`Boeking van ${event.title} op ${event.start.toLocaleDateString()} annuleren?`)) {
-          const id = event.id;
-          const mail = prompt('Bevestig je e-mailadres:');
-          if (mail) cancelBooking(id, mail);
-        }
-      } else {
-        const keuze = confirm(`Wil je alle volgende boekingen van deze reeks vanaf ${event.start.toLocaleDateString()} verwijderen?\nKlik op OK voor alle volgende, of Annuleer voor enkel deze.`);
-        const mail = prompt('Bevestig je e-mailadres:');
-        if (!mail) return;
-
-        if (keuze) {
-          fetch(scriptURL, {
-            method: 'POST',
-            body: new URLSearchParams({
-              action: 'delete_series',
-              zaal: event.extendedProps.zaal,
-              naam: event.extendedProps.naam,
-              mail: mail,
-              datum: event.startStr.split('T')[0]
-            })
-          })
-          .then(res => res.text())
-          .then(txt => {
-            alert(txt);
-            loadCalendar();
-          });
-        } else {
-          cancelBooking(event.id, mail);
-        }
+      if (calendar) {
+        calendar.removeAllEvents();
+        calendar.addEventSource(filteredEvents);
+        return;
       }
-    }
-  });
 
-  calendar.render();
-}
+      calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'timeGridWeek',
+        timeZone: 'local',
+        events: filteredEvents,
+        eventClick: function(info) {
+          const event = info.event;
+          const isHerhaling = event.extendedProps.herhaling;
+
+          const mail = prompt('Bevestig je e-mailadres:');
+          if (!mail) return;
+
+          if (!isHerhaling) {
+            if (confirm(`Boeking van ${event.title} op ${event.start.toLocaleDateString()} annuleren?`)) {
+              cancelBooking(event.id, mail);
+            }
+          } else {
+            const keuze = confirm(`Wil je alle volgende boekingen van deze reeks vanaf ${event.start.toLocaleDateString()} verwijderen?\nKlik op OK voor alle volgende, of Annuleer voor enkel deze.`);
+            if (keuze) {
+              fetch(scriptURL, {
+                method: 'POST',
+                body: new URLSearchParams({
+                  action: 'delete_series',
+                  zaal: event.extendedProps.zaal,
+                  naam: event.extendedProps.naam,
+                  mail: mail,
+                  datum: event.startStr.split('T')[0]
+                })
+              })
+              .then(res => res.text())
+              .then(txt => {
+                alert(txt);
+                loadCalendar();
+              });
+            } else {
+              cancelBooking(event.id, mail);
+            }
+          }
+        }
+      });
+
+      calendar.render();
+    }
 
     document.getElementById('zaal-filter').addEventListener('change', function () {
       renderCalendar(this.value);
