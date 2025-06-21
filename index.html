@@ -108,50 +108,53 @@
       verzendBoekingen(boekingen, form);
     });
 
-    async function verzendBoekingen(boekingen, form) {
-      const meldingenDiv = document.getElementById('meldingen');
-      meldingenDiv.innerHTML = '<strong>Verwerken boekingen:</strong><br>';
+    async function verzendBoekingen(boekingen) {
+  const meldingenDiv = document.getElementById('meldingen');
+  meldingenDiv.innerHTML = '<strong>Verwerken boekingen:</strong><br>';
 
-      const eerste = boekingen[0];
-      const laatste = boekingen[boekingen.length - 1];
+  const eerste = boekingen[0];
+  const laatste = boekingen[boekingen.length - 1];
 
-      const fd = new FormData();
-      fd.append('action', 'add');
-      fd.append('zaal', eerste.zaal);
-      fd.append('naam', eerste.naam);
-      fd.append('mail', eerste.mail);
-      fd.append('start', eerste.start);
-      fd.append('stop', eerste.stop);
-      fd.append('datum', eerste.datum);
+  const fd = new FormData();
+  fd.append('action', 'add');
+  fd.append('zaal', eerste.zaal);
+  fd.append('naam', eerste.naam);
+  fd.append('mail', eerste.mail);
+  fd.append('start', eerste.start);
+  fd.append('stop', eerste.stop);
+  fd.append('datum', eerste.datum);
 
-      const isHerhaling = boekingen.length > 1;
-      if (isHerhaling) {
-        fd.append('herhaling', 'true');
-        fd.append('reeksid', eerste.reeksid || crypto.randomUUID());
-        fd.append('einddatum', laatste.datum);
-      } else {
-        fd.append('herhaling', 'false');
-      }
+  const isHerhaling = boekingen.length > 1;
+  if (isHerhaling) {
+    fd.append('herhaling', 'true');
+    fd.append('reeksid', eerste.reeksid);
+    fd.append('einddatum', laatste.datum);
+  } else {
+    fd.append('herhaling', 'false');
+  }
 
-      try {
-        const res = await fetch(scriptURL, { method: 'POST', body: fd });
-        const tekst = await res.text();
+  try {
+    const res = await fetch(scriptURL, {
+      method: 'POST',
+      body: fd
+    });
+    const tekst = await res.text();
 
-        if (!res.ok) {
-          meldingenDiv.innerHTML += `⚠️ Fout (status ${res.status}): ${tekst}<br>`;
-        } else {
-          meldingenDiv.innerHTML += tekst.replace(/\n/g, '<br>') + '<br>';
-          form.reset();
-          document.getElementById('herhaal-sectie').style.display = 'none';
-        }
-
-      } catch (err) {
-        meldingenDiv.innerHTML += `❌ Verzendfout: ${err.message}<br>`;
-      }
-
-      meldingenDiv.innerHTML += '<br><strong>Verwerking voltooid.</strong>';
-      loadCalendar();
+    // 🤝 Herkende responscodes
+    if (res.status === 400) {
+      meldingenDiv.innerHTML += `❌ Geweigerd:<br>${tekst.replace(/\n/g, '<br>')}<br>`;
+    } else if (!res.ok) {
+      meldingenDiv.innerHTML += `⚠️ Fout (status ${res.status}): ${tekst}<br>`;
+    } else {
+      meldingenDiv.innerHTML += tekst.replace(/\n/g, '<br>') + '<br>';
     }
+  } catch (err) {
+    meldingenDiv.innerHTML += `❌ Verzendfout: ${err.message}<br>`;
+  }
+
+  meldingenDiv.innerHTML += '<br><strong>Verwerking voltooid.</strong>';
+  loadCalendar();
+}
 
     function cancelBooking(id, mail) {
       const formData = new FormData();
