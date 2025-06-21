@@ -110,7 +110,7 @@
     verzendBoekingen(boekingen);
   });
 
- async function verzendBoekingen(boekingen) {
+async function verzendBoekingen(boekingen) {
   const meldingenDiv = document.getElementById('meldingen');
   meldingenDiv.innerHTML = '<strong>Verwerken boekingen:</strong><br>';
 
@@ -137,15 +137,14 @@
 
   try {
     const res = await fetch(scriptURL, { method: 'POST', body: fd });
-
     const tekst = await res.text();
 
+    // Controleer of het antwoord een fout bevat (conflicten alleen / server error)
     if (!res.ok) {
-      meldingenDiv.innerHTML += `❌ Fout bij verzenden (status ${res.status}): ${tekst}<br>`;
+      meldingenDiv.innerHTML += `❌ Conflict of fout:<br>${tekst.replace(/\n/g, '<br>')}<br>`;
     } else {
-      meldingenDiv.innerHTML += tekst.replace(/\n/g, '<br>') + '<br>';
+      meldingenDiv.innerHTML += `${tekst.replace(/\n/g, '<br>')}<br>`;
     }
-
   } catch (err) {
     meldingenDiv.innerHTML += `❌ Fout bij versturen: ${err.message}<br>`;
   }
