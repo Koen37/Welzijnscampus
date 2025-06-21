@@ -111,50 +111,40 @@
   });
 
   async function verzendBoekingen(boekingen) {
-    const meldingenDiv = document.getElementById('meldingen');
-    meldingenDiv.innerHTML = '<strong>Verwerken boekingen:</strong><br>';
+  const meldingenDiv = document.getElementById('meldingen');
+  meldingenDiv.innerHTML = '<strong>Verwerken boekingen:</strong><br>';
 
-    for (const b of boekingen) {
-      const startNieuw = new Date(`${b.datum}T${b.start}`);
-      const eindNieuw = new Date(`${b.datum}T${b.stop}`);
-      const conflict = allEvents.some(ev => {
-        if (ev.zaal !== b.zaal) return false;
-        const evStart = new Date(ev.start);
-        const evEnd = new Date(ev.end);
-        return startNieuw < evEnd && eindNieuw > evStart;
-      });
+  for (const b of boekingen) {
+    const fd = new FormData();
+    fd.append('action', 'add');
+    fd.append('zaal', b.zaal);
+    fd.append('datum', b.datum);
+    fd.append('start', b.start);
+    fd.append('stop', b.stop);
+    fd.append('naam', b.naam);
+    fd.append('mail', b.mail);
+    fd.append('herhaling', b.kleur ? 'true' : 'false');
+    if (b.reeksid) fd.append('reeksid', b.reeksid);
 
-      if (conflict) {
-        meldingenDiv.innerHTML += `❌ ${b.datum}: zaal bezet<br>`;
-        continue;
-      }
+    try {
+      const res = await fetch(scriptURL, { method: 'POST', body: fd });
+      const tekst = await res.text();
 
-      const fd = new FormData();
-      fd.append('action', 'add');
-      fd.append('zaal', b.zaal);
-      fd.append('datum', b.datum);
-      fd.append('start', b.start);
-      fd.append('stop', b.stop);
-      fd.append('naam', b.naam);
-      fd.append('mail', b.mail);
-      fd.append('herhaling', b.kleur ? 'true' : 'false');
-      if (b.reeksid) fd.append('reeksid', b.reeksid);
-
-      try {
-        const res = await fetch(scriptURL, { method: 'POST', body: fd });
-        const tekst = await res.text();
-        if (!res.ok) throw new Error(tekst);
+      if (tekst.toLowerCase().includes('conflict')) {
+        meldingenDiv.innerHTML += `❌ ${b.datum}: geweigerd<br>`;
+      } else {
         meldingenDiv.innerHTML += `✅ ${b.datum}: geboekt<br>`;
-      } catch (err) {
-        meldingenDiv.innerHTML += `❌ ${b.datum}: fout – ${err.message}<br>`;
       }
-
-      await new Promise(r => setTimeout(r, 100));
+    } catch (err) {
+      meldingenDiv.innerHTML += `❌ ${b.datum}: fout – ${err.message}<br>`;
     }
 
-    meldingenDiv.innerHTML += '<br><strong>Verwerking voltooid.</strong>';
-    loadCalendar();
+    await new Promise(r => setTimeout(r, 100));
   }
+
+  meldingenDiv.innerHTML += '<br><strong>Verwerking voltooid.</strong>';
+  loadCalendar();
+}
 
   function cancelBooking(id, mail) {
     const formData = new FormData();
