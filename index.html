@@ -44,10 +44,15 @@
     <input type="email" name="mail" required>
 
     <div style="margin-top: 15px;">
-      <label><input type="checkbox" id="herhaal" name="herhaal"> Herhaal wekelijks</label>
-      <label for="einddatum">Herhalen tot en met:</label>
-      <input type="date" name="einddatum" id="einddatum">
-    </div>
+  <label>
+    <input type="checkbox" id="herhaal" name="herhaal">
+    Herhaal wekelijks
+  </label>
+  <div id="herhaal-sectie" style="display: none; margin-top: 10px;">
+    <label for="einddatum">Herhalen tot en met:</label>
+    <input type="date" name="einddatum" id="einddatum">
+  </div>
+</div>
 
     <button type="submit">Reserveer</button>
   </form>
@@ -246,7 +251,22 @@ function loadCalendar(filter = "ALL") {
   document.getElementById('zaal-filter').addEventListener('change', function () {
     renderCalendar(this.value);
   });
+    document.getElementById('herhaal').addEventListener('change', function () {
+  const zichtbaar = this.checked;
+  document.getElementById('herhaal-sectie').style.display = zichtbaar ? 'block' : 'none';
+});
+window.addEventListener('DOMContentLoaded', () => {
+  const vandaag = new Date();
+  const yyyyMMdd = vandaag.toISOString().split('T')[0];
+  document.querySelector('input[name="datum"]').value = yyyyMMdd;
 
+  const volgendeWeek = new Date(vandaag);
+  volgendeWeek.setDate(vandaag.getDate() + 7);
+  const yyyyMMddPlus7 = volgendeWeek.toISOString().split('T')[0];
+  document.querySelector('input[name="einddatum"]').value = yyyyMMddPlus7;
+});
+
+    
   loadCalendar();
 </script>
 </body>
