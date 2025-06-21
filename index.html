@@ -154,34 +154,42 @@
       });
   }
 
-  function loadCalendar(filter = "ALL") {
-    fetch(scriptURL)
-      .then(res => res.json())
-      .then(data => {
-        allEvents = data.boekingen.map(entry => ({
-          id: entry.boekingsnr,
-          title: entry.zaal + ' - ' + entry.naam,
-          start: entry.datum + 'T' + entry.start,
-          end: entry.datum + 'T' + entry.stop,
-          zaal: entry.zaal,
-          naam: entry.naam,
-          color: entry.herhaling?.toLowerCase() === 'true' ? 'lightblue' : 'lightgreen',
-          reeksid: entry.reeksid
-        }));
+  function padTime(t) {
+  if (!t) return '00:00';
+  const parts = t.split(':');
+  const hh = parts[0].padStart(2, '0');
+  const mm = parts[1] ? parts[1].padStart(2, '0') : '00';
+  return `${hh}:${mm}`;
+}
 
-        const zaalSelect = document.getElementById('zaal-select');
-        const zaalFilter = document.getElementById('zaal-filter');
-        zaalSelect.innerHTML = '';
-        zaalFilter.innerHTML = '<option value="ALL">Alle zalen</option>';
+function loadCalendar(filter = "ALL") {
+  fetch(scriptURL)
+    .then(res => res.json())
+    .then(data => {
+      allEvents = data.boekingen.map(entry => ({
+        id: entry.boekingsnr,
+        title: entry.zaal + ' - ' + entry.naam,
+        start: entry.datum + 'T' + padTime(entry.start),
+        end: entry.datum + 'T' + padTime(entry.stop),
+        zaal: entry.zaal,
+        naam: entry.naam,
+        color: entry.herhaling?.toLowerCase() === 'true' ? 'lightblue' : 'lightgreen',
+        reeksid: entry.reeksid
+      }));
 
-        data.zalen.forEach(zaal => {
-          zaalSelect.add(new Option(zaal, zaal));
-          zaalFilter.add(new Option(zaal, zaal));
-        });
+      const zaalSelect = document.getElementById('zaal-select');
+      const zaalFilter = document.getElementById('zaal-filter');
+      zaalSelect.innerHTML = '';
+      zaalFilter.innerHTML = '<option value="ALL">Alle zalen</option>';
 
-        renderCalendar(filter);
+      data.zalen.forEach(zaal => {
+        zaalSelect.add(new Option(zaal, zaal));
+        zaalFilter.add(new Option(zaal, zaal));
       });
-  }
+
+      renderCalendar(filter);
+    });
+}
 
   function renderCalendar(filter) {
     const calendarEl = document.getElementById('calendar');
@@ -209,7 +217,7 @@
             cancelBooking(event.id, mail);
           }
         } else {
-          const keuze = confirm(`Wil je alle volgende boekingen van deze reeks vanaf ${event.start.toLocaleDateString()} verwijderen?\nKlik op OK voor alle volgende, of Annuleer voor enkel deze.`);
+          const keuze = confirm(`Wil je alle volgende boekingen van deze reeks vanaf ${event.start.toLocaleDateString()} verwijderen?\nKlik op OK voor alle volgende, of Cancel voor enkel deze.`);
           if (keuze) {
             fetch(scriptURL, {
               method: 'POST',
