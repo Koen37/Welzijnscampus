@@ -139,14 +139,17 @@ async function verzendBoekingen(boekingen) {
     const res = await fetch(scriptURL, { method: 'POST', body: fd });
     const tekst = await res.text();
 
-    // Controleer of het antwoord een fout bevat (conflicten alleen / server error)
-    if (!res.ok) {
-      meldingenDiv.innerHTML += `❌ Conflict of fout:<br>${tekst.replace(/\n/g, '<br>')}<br>`;
+    // Beschouw 400 (geweigerd) ook als geldige reactie
+    if (res.status === 400) {
+      meldingenDiv.innerHTML += `❌ Geweigerd:<br>${tekst.replace(/\n/g, '<br>')}<br>`;
+    } else if (!res.ok) {
+      meldingenDiv.innerHTML += `⚠️ Fout (status ${res.status}): ${tekst}<br>`;
     } else {
-      meldingenDiv.innerHTML += `${tekst.replace(/\n/g, '<br>')}<br>`;
+      meldingenDiv.innerHTML += tekst.replace(/\n/g, '<br>') + '<br>';
     }
+
   } catch (err) {
-    meldingenDiv.innerHTML += `❌ Fout bij versturen: ${err.message}<br>`;
+    meldingenDiv.innerHTML += `❌ Verzendfout: ${err.message}<br>`;
   }
 
   meldingenDiv.innerHTML += '<br><strong>Verwerking voltooid.</strong>';
