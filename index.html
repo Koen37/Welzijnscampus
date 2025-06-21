@@ -125,41 +125,9 @@
       });
 
       if (conflict) {
-  const conflictEvent = allEvents.find(ev => ev.zaal === b.zaal && 
-    new Date(ev.start) < eindNieuw && new Date(ev.end) > startNieuw);
-
-  const bezetter = conflictEvent ? conflictEvent.naam : 'onbekend';
-  const bezetStart = conflictEvent ? new Date(conflictEvent.start).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) : '';
-  const bezetEinde = conflictEvent ? new Date(conflictEvent.end).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) : '';
-
-  meldingenDiv.innerHTML += `❌ ${b.datum}: zaal bezet door ${bezetter}<br>`;
-
-  // Stuur mail naar indiener
-  const conflictBericht = `Beste ${b.naam},
-
-Je aanvraag voor zaal ${b.zaal} op ${b.datum} van ${b.start} tot ${b.stop} kon niet worden verwerkt omdat de zaal reeds geboekt is door ${bezetter} van ${bezetStart} tot ${bezetEinde}.
-
-Gelieve een andere tijd te kiezen of contact op te nemen met ${bezetter}.
-
-Met vriendelijke groeten,  
-Koengfou`;
-
-  try {
-    await fetch('https://script.google.com/macros/s/AKfycbz-VWWh_z5nOl1fsMA5Wen3D1cTz5u4Qy6FAojue3DR9U43dHXfBYA7FQzTjo5WIQZq/exec', {
-      method: 'POST',
-      body: new URLSearchParams({
-        action: 'mail_conflict',
-        to: b.mail,
-        subject: `Boeking geweigerd voor ${b.datum}`,
-        message: conflictBericht
-      })
-    });
-  } catch (err) {
-    console.error('Fout bij verzenden conflictmail:', err);
-  }
-
-  continue;
-}
+        meldingenDiv.innerHTML += `❌ ${b.datum}: zaal bezet<br>`;
+        continue;
+      }
 
       const fd = new FormData();
       fd.append('action', 'add');
