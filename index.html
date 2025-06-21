@@ -127,13 +127,17 @@
   fd.append('datum', eerste.datum);
 
   const isHerhaling = boekingen.length > 1;
-  if (isHerhaling) {
-    fd.append('herhaling', 'true');
-    fd.append('reeksid', eerste.reeksid || crypto.randomUUID());
-    fd.append('einddatum', laatste.datum);
-  } else {
-    fd.append('herhaling', 'false');
-  }
+if (isHerhaling) {
+  const eindDatumStr = typeof laatste.datum === 'string'
+    ? laatste.datum
+    : new Date(laatste.datum).toISOString().split('T')[0];
+
+  fd.append('herhaling', 'true');
+  fd.append('reeksid', eerste.reeksid || crypto.randomUUID());
+  fd.append('einddatum', eindDatumStr);
+} else {
+  fd.append('herhaling', 'false');
+}
 
   try {
     const res = await fetch(scriptURL, { method: 'POST', body: fd });
