@@ -208,6 +208,8 @@ function loadCalendar(filter = "ALL") {
 
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'timeGridWeek',
+      slotMinTime: '08:00:00',
+      height: 600,
       timeZone: 'local',
       events: filteredEvents,
       slotLabelFormat: {
