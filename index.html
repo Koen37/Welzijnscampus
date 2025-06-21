@@ -110,36 +110,37 @@
     verzendBoekingen(boekingen);
   });
 
-  async function verzendBoekingen(boekingen) {
+ async function verzendBoekingen(boekingen) {
   const meldingenDiv = document.getElementById('meldingen');
   meldingenDiv.innerHTML = '<strong>Verwerken boekingen:</strong><br>';
 
-  for (const b of boekingen) {
-    const fd = new FormData();
-    fd.append('action', 'add');
-    fd.append('zaal', b.zaal);
-    fd.append('datum', b.datum);
-    fd.append('start', b.start);
-    fd.append('stop', b.stop);
-    fd.append('naam', b.naam);
-    fd.append('mail', b.mail);
-    fd.append('herhaling', b.kleur ? 'true' : 'false');
-    if (b.reeksid) fd.append('reeksid', b.reeksid);
+  const eerste = boekingen[0];
+  const laatste = boekingen[boekingen.length - 1];
 
-    try {
-      const res = await fetch(scriptURL, { method: 'POST', body: fd });
-      const tekst = await res.text();
+  const fd = new FormData();
+  fd.append('action', 'add');
+  fd.append('zaal', eerste.zaal);
+  fd.append('naam', eerste.naam);
+  fd.append('mail', eerste.mail);
+  fd.append('start', eerste.start);
+  fd.append('stop', eerste.stop);
+  fd.append('datum', eerste.datum);
 
-      if (tekst.toLowerCase().includes('conflict')) {
-        meldingenDiv.innerHTML += `❌ ${b.datum}: geweigerd<br>`;
-      } else {
-        meldingenDiv.innerHTML += `✅ ${b.datum}: geboekt<br>`;
-      }
-    } catch (err) {
-      meldingenDiv.innerHTML += `❌ ${b.datum}: fout – ${err.message}<br>`;
-    }
+  const isHerhaling = boekingen.length > 1;
+  if (isHerhaling) {
+    fd.append('herhaling', 'true');
+    fd.append('reeksid', eerste.reeksid || crypto.randomUUID());
+    fd.append('einddatum', laatste.datum);
+  } else {
+    fd.append('herhaling', 'false');
+  }
 
-    await new Promise(r => setTimeout(r, 100));
+  try {
+    const res = await fetch(scriptURL, { method: 'POST', body: fd });
+    const tekst = await res.text();
+    meldingenDiv.innerHTML += tekst.replace(/\n/g, '<br>') + '<br>';
+  } catch (err) {
+    meldingenDiv.innerHTML += `❌ Fout bij versturen: ${err.message}<br>`;
   }
 
   meldingenDiv.innerHTML += '<br><strong>Verwerking voltooid.</strong>';
